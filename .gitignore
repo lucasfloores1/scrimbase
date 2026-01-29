@@ -1,0 +1,33 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Build
+dist/
+build/
+
+# NestJS
+coverage/
+.nest/
+logs/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Frontend (cuando exista)
+frontend/node_modules/
+frontend/dist/
+
+# Backend build
+backend/dist/
+backend/node_modules/
