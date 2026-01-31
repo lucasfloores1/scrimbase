@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose/dist/common/mongoose.decorators';
 import { Team } from './schemas/team.schema';
 import { Model, Types } from 'mongoose';
@@ -16,7 +16,7 @@ export class TeamsService {
     async createTeam( userId: string, dto: CreateTeamDto ) {
         const existingMembership = await this.teamMemberService.getUserMembership(userId);
         if (existingMembership) {
-            throw new Error('User is already a member of a team');
+            throw new BadRequestException('User is already a member of a team');
         }
 
         const team = await this.teamModel.create({
@@ -30,6 +30,18 @@ export class TeamsService {
         return team;
     }
 
+    async joinTeam( userId: string, teamId: string ) {
+        const existingMembership = await this.teamMemberService.getUserMembership(userId);
+        if (existingMembership) {
+            throw new BadRequestException('User is already a member of a team');
+        }
+        const team = await this.getTeamById(teamId);
+        if (!team) {
+            throw new BadRequestException('Team not found');
+        }
+        return this.teamMemberService.createMember(userId, teamId, TeamRole.PLAYER);
+    }
+
     async getTeamById( teamId: string ) {
         return this.teamModel.findById( new Types.ObjectId(teamId) ).exec();
     }
@@ -37,11 +49,7 @@ export class TeamsService {
     async getUserTeam( userId: string ) {
         const membership = await this.teamMemberService.getUserMembership(userId);
 
-        if (!membership) {
-            return null;
-        }
-
-        return membership;
+        return membership ?? null;
     }
 
 }

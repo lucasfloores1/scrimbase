@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { TeamsService } from './teams.service';
 import { CreateTeamDto } from './dto/create-team.dto';
@@ -20,6 +20,11 @@ export class TeamsController {
     @UseGuards(TeamMemberGuard)
     async getMyTeam(@Req() req) {
         return this.teamsService.getUserTeam(req.user.userId);
+    }
+
+    @Post(':teamId/join')
+    async joinTeam(@Req() req, @Param('teamId') teamId: string) {
+        return this.teamsService.joinTeam(req.user.userId, teamId);
     }
 
 }

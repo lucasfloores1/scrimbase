@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable, mixin } from "@nestjs/common";
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable, mixin } from "@nestjs/common";
 import { TeamRole } from "../schemas/team-member.schema";
 
 Injectable()
@@ -9,7 +9,7 @@ export const TeamRoleGuard = ( allowedRoles: TeamRole[] ) => {
             const role = req.user?.teamMember?.role;
 
             if (!role || !allowedRoles.includes(role)) {
-                throw new Error('User does not have the required team role');
+                throw new ForbiddenException('User does not have the required team role');
             }
             
             return true;

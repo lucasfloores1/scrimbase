@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
@@ -21,6 +21,16 @@ export class TeamMemberService {
             teamId: new Types.ObjectId(teamId),
             role: TeamRole.MANAGER,
             isAdmin: true,
+            joinedAt: new Date(),
+        });
+    }
+
+    async createMember(userId: string, teamId: string, role: TeamRole) {
+        return this.teamMemberModel.create({
+            userId: new Types.ObjectId(userId),
+            teamId: new Types.ObjectId(teamId),
+            role: role,
+            isAdmin: false,
             joinedAt: new Date(),
         });
     }
@@ -50,12 +60,102 @@ export class TeamMemberService {
         const isAdmin = await this.isAdmin(userId, teamId);
 
         if (isAdmin && admins <= 1) {
-            throw new Error('Team must have at least one admin');
+            throw new BadRequestException('Team must have at least one admin');
         }
 
-        return this.teamMemberModel.deleteOne({
+        const res = await this.teamMemberModel.deleteOne({
             userId: new Types.ObjectId(userId),
             teamId: new Types.ObjectId(teamId),
         }).exec();
+
+        if (res.deletedCount === 0) {
+            throw new BadRequestException('Member not found in team');
+        }
+
+        return { success: true };
     }
+
+    async setAdminStatus(params: {
+        actorUserId: string;
+        targetUserId: string;
+        teamId: string;
+        isAdmin: boolean;
+    }) {
+        const { targetUserId, teamId, isAdmin } = params;
+
+        const target = await this.teamMemberModel.findOne({
+            userId: new Types.ObjectId(targetUserId),
+            teamId: new Types.ObjectId(teamId),
+        })
+
+        if (!target) {
+            throw new BadRequestException('Target member not found in team');
+        }
+
+        if (target.isAdmin && !isAdmin) {
+            const admins = await this.countAdmins(teamId);
+            if (admins <= 1) {
+                throw new BadRequestException('Team must have at least one admin');
+            }
+        }
+
+        target.isAdmin = isAdmin;
+        await target.save();
+
+        return { success: true  };
+    }
+
+    async setRole(params: {
+        targetUserId: string;
+        teamId: string;
+        role: TeamRole;
+    }) {
+        const { targetUserId, teamId, role } = params;
+        const target = await this.teamMemberModel.findOne({
+            userId: new Types.ObjectId(targetUserId),
+            teamId: new Types.ObjectId(teamId),
+        })
+
+        if (!target) {
+            throw new BadRequestException('Target member not found');
+        }
+
+        target.role = role;
+        await target.save();
+        return { success: true };
+    }
+
+    async transferAdmin(params: {
+        actorUserId: string;
+        targetUserId: string;
+        teamId: string;
+    }) {
+        const { actorUserId, targetUserId, teamId } = params;
+
+        if (actorUserId === targetUserId) {
+            throw new BadRequestException('Cannot transfer admin to self');
+        }
+
+        const actor = await this.teamMemberModel.findOne({
+            userId: new Types.ObjectId(actorUserId),
+            teamId: new Types.ObjectId(teamId),
+        });
+
+        const target = await this.teamMemberModel.findOne({
+            userId: new Types.ObjectId(targetUserId),
+            teamId: new Types.ObjectId(teamId),
+        });
+
+        if(!actor) throw new BadRequestException('Actor member not found');
+        if(!target) throw new BadRequestException('Target member not found');
+
+        target.isAdmin = true;
+        await target.save();
+        actor.isAdmin = false;
+        await actor.save();
+
+        return { success: true };
+    }
+
+    
 }

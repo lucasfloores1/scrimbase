@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class TeamAdminGuard implements CanActivate {
@@ -7,7 +7,7 @@ export class TeamAdminGuard implements CanActivate {
         const isAdmin = req.user?.teamMember?.isAdmin;
 
         if (!isAdmin) {
-            throw new Error('User is not a team admin');
+            throw new ForbiddenException('User is not a team admin');
         }
 
         return true;
