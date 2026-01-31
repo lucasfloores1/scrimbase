@@ -8,14 +8,17 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { TeamsModule } from './teams/teams.module';
 import { MatchesModule } from './matches/matches.module';
+import { configs } from './config';
+import { TeamMemberController } from './teams/team-member.controller';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      load: configs,
+      envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
     }),
     MongooseModule.forRootAsync({
-      imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         uri: config.get<string>('MONGO_URI'),
@@ -25,6 +28,7 @@ import { MatchesModule } from './matches/matches.module';
             log('error', `❌ MongoDB connection error: ${error}`, 'MongoDB');
             process.exit(1);
           });
+          return connection;
         },
         connectionErrorFactory: (error) => {
           log('error', `❌ MongoDB initial connection error: ${error}`, 'MongoDB');

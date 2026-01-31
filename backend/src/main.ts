@@ -4,12 +4,13 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { log } from './utils/logger.util';
 import { ValidationPipe } from '@nestjs/common/pipes/validation.pipe';
 import { WinstonAdapter } from './utils/nest-winston.adapter';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
 
   try {
 
-  const app = await NestFactory.create(AppModule, { logger: new WinstonAdapter() });
+  const app = await NestFactory.create(AppModule/*, { logger: new WinstonAdapter() }*/);
 
   app.setGlobalPrefix('api');
 
@@ -29,9 +30,9 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document);
 
-  const PORT = process.env.PORT || 3000;
-  await app.listen(PORT);
-  log('info', `🚀 Application is running on: http://localhost:${PORT}`, 'Bootstrap');
+  const port = app.get(ConfigService).get<number>('app.port') || 3000;
+  await app.listen(port);
+  log('info', `🚀 Application is running on: http://localhost:${port}`, 'Bootstrap');
     
   } catch (error) {
 
