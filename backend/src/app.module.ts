@@ -13,6 +13,7 @@ import { HttpLoggerMiddleware } from './common/middleware/http-logger.middleware
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { ScrimsModule } from './scrims/scrims.module';
+import { StratsModule } from './strats/strats.module';
 
 const mongoLogger = new Logger('MongoDB');
 
@@ -49,7 +50,8 @@ const mongoLogger = new Logger('MongoDB');
     AuthModule,
     UsersModule,
     TeamsModule,
-    ScrimsModule
+    ScrimsModule,
+    StratsModule
   ],
   controllers: [AppController],
   providers: [AppService],
@@ -58,7 +60,7 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
     .apply(HttpLoggerMiddleware)
-    .forRoutes({  path: '*', method: RequestMethod.ALL } );
+    .forRoutes({  path: '/*path', method: RequestMethod.ALL } );
   }
 }
 
