@@ -157,5 +157,14 @@ export class TeamMemberService {
         return { success: true };
     }
 
-    
+    async areUsersMembersOfTeam( teamId : string, userIds : string[] ) : Promise<boolean> {
+        const unique = Array.from(new Set(userIds))
+        if (unique.length === 0) return true;
+        const count = await this.teamMemberModel.countDocuments({
+            teamId,
+            userId: { $in: unique }
+        })
+
+        return count === unique.length
+    }
 }

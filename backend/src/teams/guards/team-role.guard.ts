@@ -1,8 +1,9 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable, mixin } from "@nestjs/common";
 import { TeamRole } from "../schemas/team-member.schema";
 
-Injectable()
 export const TeamRoleGuard = ( allowedRoles: TeamRole[] ) => {
+    
+    @Injectable()
     class RoleGuard implements CanActivate {
         canActivate(context: ExecutionContext): boolean {
             const req = context.switchToHttp().getRequest();

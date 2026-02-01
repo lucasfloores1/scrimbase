@@ -1,21 +1,21 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from "@nestjs/common";
-import { InjectModel } from "@nestjs/mongoose";
-import { TeamMember } from "../schemas/team-member.schema";
-import { Model, Types } from "mongoose";
 
 @Injectable()
 export class TeamMemberGuard implements CanActivate {
-    constructor(
-        @InjectModel(TeamMember.name)
-        private teamMemberModel: Model<TeamMember>,
-    ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
-        const request = context.switchToHttp().getRequest();
-        const teamMember = request.user?.teamMember;
+        const req = context.switchToHttp().getRequest();
+        const membership = req.user?.teamMember;
 
-        if (!teamMember) {
+        const paramTeamId = req.params?.teamId;
+        const memberTeamId = membership.teamId?.toString?.() ?? membership.teamId;
+
+        if (!membership) {
             throw new ForbiddenException('User is not a member of any team');
+        }
+
+        if (!paramTeamId || memberTeamId !== paramTeamId) {
+            throw new ForbiddenException('User is not a member of this team');
         }
         
         return true;

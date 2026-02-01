@@ -6,11 +6,13 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { TeamsModule } from './teams/teams.module';
-import { MatchesModule } from './matches/matches.module';
 import { configs } from './config';
 import { WinstonModule } from 'nest-winston';
 import { winstonConfig } from './logger/winston.logger';
 import { HttpLoggerMiddleware } from './common/middleware/http-logger.middleware';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+import { ScrimsModule } from './scrims/scrims.module';
 
 const mongoLogger = new Logger('MongoDB');
 
@@ -40,10 +42,14 @@ const mongoLogger = new Logger('MongoDB');
         }
       }),
     }),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot : '/uploads'
+    }),
     AuthModule,
     UsersModule,
     TeamsModule,
-    MatchesModule,
+    ScrimsModule
   ],
   controllers: [AppController],
   providers: [AppService],
