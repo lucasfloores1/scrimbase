@@ -5,6 +5,7 @@ import { Model, Types } from 'mongoose';
 import { TeamMember, TeamRole } from './schemas/team-member.schema';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { TeamMemberService } from './team-member.service';
+import { generateInviteCode } from './utils/invite-code';
 
 @Injectable()
 export class TeamsService {
@@ -19,15 +20,25 @@ export class TeamsService {
             throw new BadRequestException('User is already a member of a team');
         }
 
-        const team = await this.teamModel.create({
-            name: dto.name,
-            tag: dto.tag,
-            createdBy: new Types.ObjectId(userId),
-        });
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                const team = await this.teamModel.create({
+                name: dto.name,
+                tag: dto.tag,
+                createdBy: new Types.ObjectId(userId),
+                inviteCode: generateInviteCode(),
+                });
 
-        await this.teamMemberService.createOwner(userId, team._id.toString());
+                await this.teamMemberService.createOwner(userId, team._id.toString());
 
-        return team;
+                return team;
+            } catch (err: any) {
+                if (err?.code === 11000 && err?.keyPattern?.inviteCode) { continue }
+                throw err;
+            }
+        }
+
+        throw new BadRequestException('Could not generate invite code. Please try again.',);
     }
 
     async joinTeam( userId: string, teamId: string ) {
@@ -50,6 +61,19 @@ export class TeamsService {
         const membership = await this.teamMemberService.getUserMembership(userId);
 
         return membership ?? null;
+    }
+
+    async joinByInviteCode( userId: string, inviteCode: string ) {
+        const existingMembership = await this.teamMemberService.getUserMembership(userId);
+        if (existingMembership) {
+            throw new BadRequestException('User already belongs to a team');
+        }
+
+        const team = await this.teamModel.findOne({ inviteCode }).exec();
+        if (!team) {
+            throw new BadRequestException('Invalid invite code');
+        }
+        return this.teamMemberService.createMember(userId, team._id.toString(), TeamRole.PLAYER);
     }
 
 }

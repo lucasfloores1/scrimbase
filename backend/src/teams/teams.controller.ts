@@ -3,6 +3,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { TeamsService } from './teams.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { TeamMemberGuard } from './guards/team-member.guard';
+import { JoinTeamByCodeDto } from './dto/join-team-by-code.dto';
 
 @Controller('teams')
 @UseGuards(JwtAuthGuard)
@@ -26,5 +27,10 @@ export class TeamsController {
     async joinTeam(@Req() req, @Param('teamId') teamId: string) {
         return this.teamsService.joinTeam(req.user.userId, teamId);
     }
+
+    @Post('join')
+    async joinByInviteCode(@Req() req, @Body() dto: JoinTeamByCodeDto) {
+        return this.teamsService.joinByInviteCode( req.user.userId, dto.inviteCode )
+    } 
 
 }
