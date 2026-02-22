@@ -1,6 +1,6 @@
 import { IsEmail, IsString, Min, MinLength } from "class-validator";
 
-export class CreateUsaerDto {
+export class CreateUserDto {
 
     @IsEmail()
     email: string;
@@ -11,4 +11,7 @@ export class CreateUsaerDto {
 
     @IsString()
     username: string;
+
+    @IsString()
+    riotId: string;
 }

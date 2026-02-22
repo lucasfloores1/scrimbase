@@ -24,6 +24,8 @@ export class UsersService {
         email: string;
         username: string;
         passwordHash: string;
+        riotId?: string;
+        riotIdNormalized?: string;
     }) {
         const newUser = new this.userModel(data);
         return newUser.save();

@@ -39,5 +39,4 @@ export class StratsService {
             .lean()
             .exec();
     }
-
 }

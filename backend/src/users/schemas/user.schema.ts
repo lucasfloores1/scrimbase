@@ -16,6 +16,12 @@ export class User {
 
     @Prop({ default: false })
     isEmailVerified: boolean;
+
+    @Prop()
+    riotId?: string;
+
+    @Prop({ unique: true, sparse : true})
+    riotIdNormalized?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

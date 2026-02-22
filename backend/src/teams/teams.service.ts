@@ -59,7 +59,6 @@ export class TeamsService {
 
     async getUserTeam( userId: string ) {
         const membership = await this.teamMemberService.getUserMembership(userId);
-
         return membership ?? null;
     }
 
