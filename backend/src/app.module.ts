@@ -14,6 +14,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { ScrimsModule } from './scrims/scrims.module';
 import { StratsModule } from './strats/strats.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 const mongoLogger = new Logger('MongoDB');
 
@@ -51,7 +52,8 @@ const mongoLogger = new Logger('MongoDB');
     UsersModule,
     TeamsModule,
     ScrimsModule,
-    StratsModule
+    StratsModule,
+    DashboardModule
   ],
   controllers: [AppController],
   providers: [AppService],

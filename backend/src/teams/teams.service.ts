@@ -28,7 +28,7 @@ export class TeamsService {
                 createdBy: new Types.ObjectId(userId),
                 inviteCode: generateInviteCode(),
                 });
-
+                console.log("creating owner with userid: ", userId, " and teamId: ", team._id.toString())
                 await this.teamMemberService.createOwner(userId, team._id.toString());
 
                 return team;

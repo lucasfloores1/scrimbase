@@ -44,7 +44,7 @@ export class TeamMemberService {
     }
 
     async getTeamMembers( teamId: string ) {
-        return this.teamMemberModel.find({ teamId: new Types.ObjectId(teamId) }).populate('userId', 'username email').exec();
+        return this.teamMemberModel.find({ teamId: new Types.ObjectId(teamId) }).populate('userId', 'username email riotId riotIdNormalized').exec();
     }
 
     async countAdmins( teamId: string ) {
@@ -166,5 +166,11 @@ export class TeamMemberService {
         })
 
         return count === unique.length
+    }
+
+    async countTeamMembers (teamId : string ): Promise<number> {
+        return await this.teamMemberModel.countDocuments({ 
+            teamId : new Types.ObjectId(teamId) 
+        }).exec();
     }
 }

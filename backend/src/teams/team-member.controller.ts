@@ -15,13 +15,13 @@ export class TeamMemberController {
 
     @Get()
     getMembers(@Req() req) {
-        return this.teamMemberService.getTeamMembers( req.user.teamMember.teamId.toString() );
+        return this.teamMemberService.getTeamMembers( req.user.teamMember.teamId._id.toString() );
     }
 
     @Delete(':userId')
     @UseGuards(TeamAdminGuard)
     deleteMember(@Req() req, @Param('userId') userId : string) {
-        return this.teamMemberService.removeMember( userId, req.user.teamMember.teamId.toString() );
+        return this.teamMemberService.removeMember( userId, req.user.teamMember.teamId._id.toString() );
     }
 
     @Patch(':userId/admin')
@@ -30,7 +30,7 @@ export class TeamMemberController {
         return this.teamMemberService.setAdminStatus({
             actorUserId : req.user.userId,
             targetUserId : userId,
-            teamId : req.user.teamMember.teamId.toString(),
+            teamId : req.user.teamMember.teamId._id.toString(),
             isAdmin : dto.isAdmin
         });
     }
@@ -40,7 +40,7 @@ export class TeamMemberController {
     setRole(@Req() req, @Param('userId') userId : string, @Body() dto: UpdateMemberRoleDto) {
         return this.teamMemberService.setRole({
             targetUserId : userId,
-            teamId : req.user.teamMember.teamId.toString(),
+            teamId : req.user.teamMember.teamId._id.toString(),
             role : dto.role
         });
     }
@@ -51,7 +51,7 @@ export class TeamMemberController {
         return this.teamMemberService.transferAdmin({
             actorUserId : req.user.userId,
             targetUserId : userId,
-            teamId : req.user.teamMember.teamId.toString()
+            teamId : req.user.teamMember.teamId._id.toString()
         });
     }
 }

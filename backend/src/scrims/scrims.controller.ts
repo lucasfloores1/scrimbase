@@ -7,7 +7,7 @@ import { scrimMulterOptions } from "./upload/scrim-upload.config";
 import { ComputeScrimResultPipe } from "./pipes/compute-scrim-result.pipe";
 import { ParseScrimMultipartPipe } from "./pipes/parse-scrim-multipart.pipe";
 import { ParseScrimScreenshotRequestDto } from "./parsing/dto/parse-scrim-screenshot-request.dto";
-
+import { TeamFullGuard } from "src/teams/guards/team-full.guard";
 import { scrimParseMulterOptions } from "./upload/scrim-parse-upload.config";
 import { ScrimScreenshotParserService } from "./parsing/scrim-screenshot-parser.service";
 
@@ -30,6 +30,7 @@ export class ScrimsController {
     }
 
     @Post()
+    @UseGuards(TeamFullGuard)
     @UseInterceptors(FileInterceptor("screenshot", scrimMulterOptions))
     async create(
         @Param("teamId") teamId: string,
@@ -51,6 +52,7 @@ export class ScrimsController {
     }
 
     @Post("parse-screenshot")
+    @UseGuards(TeamFullGuard)
     @UseInterceptors(FileInterceptor("screenshot", scrimParseMulterOptions))
     async parseScreenshot(
         @Param("teamId") teamId: string,

@@ -8,7 +8,7 @@ import { TeamMemberService } from './team-member.service';
 import { TeamMemberController } from './team-member.controller';
 import { TeamMemberGuard } from './guards/team-member.guard';
 import { TeamAdminGuard } from './guards/team-admin.guard';
-import { TeamRoleGuard } from './guards/team-role.guard';
+import { TeamFullGuard } from './guards/team-full.guard';
 
 
 @Module({
@@ -18,7 +18,7 @@ import { TeamRoleGuard } from './guards/team-role.guard';
       { name: 'TeamMember', schema: TeamMemberSchema },
     ]),
   ],
-  providers: [TeamsService, TeamMemberService, TeamMemberGuard, TeamAdminGuard],
+  providers: [TeamsService, TeamMemberService, TeamMemberGuard, TeamAdminGuard, TeamFullGuard ],
   controllers: [TeamsController, TeamMemberController],
   exports: [TeamsService, TeamMemberService, TeamMemberGuard, TeamAdminGuard],
 })

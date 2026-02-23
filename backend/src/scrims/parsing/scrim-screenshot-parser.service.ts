@@ -13,12 +13,14 @@ import { ScrimType } from "../enums/scrim-type.enum";
 import { ParseScrimScreenshotResponseDto } from "./dto/parse-scrim-screenshot-response.dto";
 import { ScrimParseAttempt, ScrimParseAttemptStatus } from "./schemas/scrim-parse-attempt.schema";
 import { LlmScrimExtractionDto } from "./dto/llm-scrim-extraction.dto";
+import { TeamMemberService } from "src/teams/team-member.service";
 
 @Injectable()
 export class ScrimScreenshotParserService {
   constructor(
     private readonly llmVision: LlmVisionService,
     private readonly config: ConfigService,
+    private readonly teamMemberService: TeamMemberService,
     @InjectModel(ScrimParseAttempt.name) private readonly attemptModel: Model<ScrimParseAttempt>,
     @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
   ) {}
@@ -102,7 +104,8 @@ export class ScrimScreenshotParserService {
       });
     }
 
-    // 4) Validate LLM JSON with DTO (must allow enemyStats)
+    // 4) Validate LLM JSON with DTO
+    // IMPORTANT: LlmScrimExtractionDto must include enemyStats, teamStats, teamRounds, enemyRounds
     const instance = plainToInstance(LlmScrimExtractionDto, extractedJson);
     const errors = await validate(instance, { whitelist: true, forbidNonWhitelisted: true });
 
@@ -127,30 +130,40 @@ export class ScrimScreenshotParserService {
       });
     }
 
-    // 5) Build draft (enemyComposition derived from enemyStats)
+    // 5) Match teamStats displayName -> team member riotId (and set userId)
+    const teamMembers = await this.teamMemberService.getTeamMembers(teamId);
+    const matchResult = this.matchTeamStatsToMembers(instance.teamStats, teamMembers);
+
+    const matchedTeamStats = matchResult.teamStats;
+    const warnings = [...matchResult.warnings];
+
+    // 6) Build enemyComposition from enemyStats
     const enemyComposition = this.buildEnemyComposition(instance.enemyStats);
 
+    // 7) Build draft
     const draft: CreateScrimDto = {
       type,
       map,
       teamRounds: instance.teamRounds,
       enemyRounds: instance.enemyRounds,
-      teamStats: instance.teamStats,
+      teamStats: matchedTeamStats, // ✅ usar los matcheados
       enemyComposition,
     };
 
-    // 6) Outcome simple (type validations happen on final POST /scrims)
     const draftWithOutcome = {
       ...draft,
       outcome: this.computeOutcome(draft.teamRounds, draft.enemyRounds),
     };
 
-    // warnings (optional)
-    const warnings: string[] = [];
+    // warnings: unknown agents
     const unknownEnemy = enemyComposition.filter((a) => a === "UNKNOWN").length;
     if (unknownEnemy > 0) warnings.push(`Enemy agents include UNKNOWN (${unknownEnemy}/5). Please verify.`);
-    const unknownTeam = instance.teamStats.filter((p) => (p.agent ?? "").toUpperCase() === "UNKNOWN").length;
+    const unknownTeam = matchedTeamStats.filter((p) => (p.agent ?? "").toUpperCase() === "UNKNOWN").length;
     if (unknownTeam > 0) warnings.push(`Team agents include UNKNOWN (${unknownTeam}/5). Please verify.`);
+
+    // warnings: unknown player mapping
+    const unknownPlayers = matchedTeamStats.filter((p) => p.displayName === "UNKNOWN" && !p.userId).length;
+    if (unknownPlayers > 0) warnings.push(`Some team players could not be matched (${unknownPlayers}/5). Please assign.`);
 
     return {
       rawOutputId: attempt._id.toString(),
@@ -248,5 +261,118 @@ Rules:
     if (upper === "UNKNOWN") return "UNKNOWN";
 
     return a.length ? a[0].toUpperCase() + a.slice(1) : "UNKNOWN";
+  }
+
+  /**
+   * Premier Teams formatting:
+   * - Scoreboard: "TEAM | Player" => we want "Player"
+   * - RiotID: "Player#LAS" => we want "Player"
+   */
+  private matchTeamStatsToMembers(teamStats: any[], teamMembers: any[]): { teamStats: any[]; warnings: string[] } {
+    const warnings: string[] = [];
+
+    const candidates = teamMembers
+      .map((m) => {
+        const user = m.userId;
+        const riotId: string | undefined = user?.riotId;
+        const userId: string | undefined = user?._id?.toString?.() ?? user?._id;
+
+        const riotName = riotId ? this.extractRiotName(riotId) : "";
+        const riotNameNorm = this.normalizeSimple(riotName);
+
+        return { userId, riotId, riotNameNorm };
+      })
+      .filter((c) => c.userId && c.riotNameNorm);
+
+    const usedUserIds = new Set<string>();
+
+    const out = teamStats.map((stat) => {
+      const original = (stat.displayName ?? "").trim();
+
+      const scoreboardName = this.normalizeSimple(this.extractScoreboardName(original));
+
+      let best: { userId: string; riotId?: string; score: number } | null = null;
+
+      for (const c of candidates) {
+        if (usedUserIds.has(c.userId!)) continue;
+
+        // 1) exact match
+        if (scoreboardName && scoreboardName === c.riotNameNorm) {
+          best = { userId: c.userId!, riotId: c.riotId, score: 1 };
+          break;
+        }
+
+        // 2) fuzzy fallback
+        const score = this.similarity(scoreboardName, c.riotNameNorm);
+        if (!best || score > best.score) best = { userId: c.userId!, riotId: c.riotId, score };
+      }
+
+      if (best && best.score >= 0.85) {
+        usedUserIds.add(best.userId);
+
+        return {
+          ...stat,
+          userId: best.userId,
+          displayName: best.riotId ?? original,
+        };
+      }
+
+      warnings.push(`No team member match for "${original}" -> UNKNOWN (expected riotName match after "|").`);
+
+      return {
+        ...stat,
+        userId: undefined,
+        displayName: "UNKNOWN",
+      };
+    });
+
+    return { teamStats: out, warnings };
+  }
+
+  private extractScoreboardName(displayName: string): string {
+    if (!displayName) return "";
+    // "TEAM | Player" => "Player"
+    const parts = displayName.split("|");
+    const rightSide = parts.length > 1 ? parts[1] : parts[0];
+    return rightSide.trim().toLowerCase();
+  }
+
+  private extractRiotName(riotId: string): string {
+    if (!riotId) return "";
+    // "Player#LAS" => "Player"
+    return riotId.split("#")[0].trim().toLowerCase();
+  }
+
+  private normalizeSimple(input: string): string {
+    return (input ?? "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]/g, "");
+  }
+
+  private similarity(a: string, b: string): number {
+    if (!a || !b) return 0;
+    if (a === b) return 1;
+    const dist = this.levenshtein(a, b);
+    const maxLen = Math.max(a.length, b.length);
+    return maxLen === 0 ? 0 : 1 - dist / maxLen;
+  }
+
+  private levenshtein(a: string, b: string): number {
+    const m = a.length;
+    const n = b.length;
+
+    const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+      }
+    }
+
+    return dp[m][n];
   }
 }
