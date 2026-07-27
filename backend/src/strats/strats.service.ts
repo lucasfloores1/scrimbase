@@ -18,8 +18,10 @@ export class StratsService {
         return this.stratModel.create({
             teamId : new Types.ObjectId(teamId),
             createdBy : new Types.ObjectId(userId),
+            name : payload.name,
             map : payload.map,
             notes : payload.notes,
+            side : payload.side,
             screenshotUrl,
         });
 

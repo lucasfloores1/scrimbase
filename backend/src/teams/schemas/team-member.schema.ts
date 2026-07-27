@@ -9,7 +9,7 @@ export enum TeamRole {
 
 export type TeamMemberDocument = TeamMember & Document;
 
-@Schema ( { timestamps: true } )
+@Schema ( { timestamps: true, versionKey: false } )
 export class TeamMember {
     _id: string;
 

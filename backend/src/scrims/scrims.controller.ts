@@ -10,6 +10,10 @@ import { ParseScrimScreenshotRequestDto } from "./parsing/dto/parse-scrim-screen
 import { TeamFullGuard } from "src/teams/guards/team-full.guard";
 import { scrimParseMulterOptions } from "./upload/scrim-parse-upload.config";
 import { ScrimScreenshotParserService } from "./parsing/scrim-screenshot-parser.service";
+import { Serialize } from "src/common/decorators/serialize.decorator";
+import { ScrimResponseDto } from "./dto/scrim.response.dto";
+import { ParseScrimScreenshotResponseDto } from "./parsing/dto/parse-scrim.response.dto";
+
 
 @Controller("teams/:teamId/scrims")
 @UseGuards(JwtAuthGuard, TeamMemberGuard)
@@ -20,11 +24,13 @@ export class ScrimsController {
     ) {}
 
     @Get()
+    @Serialize(ScrimResponseDto)
     async list(@Param("teamId") teamId: string) {
         return this.scrimsService.findByTeam(teamId);
     }
 
     @Get(":scrimId")
+    @Serialize(ScrimResponseDto)
     async getOne(@Param("teamId") teamId: string, @Param("scrimId") scrimId: string) {
         return this.scrimsService.findOne(teamId, scrimId);
     }
@@ -32,6 +38,7 @@ export class ScrimsController {
     @Post()
     @UseGuards(TeamFullGuard)
     @UseInterceptors(FileInterceptor("screenshot", scrimMulterOptions))
+    @Serialize(ScrimResponseDto)
     async create(
         @Param("teamId") teamId: string,
         @Req() req: any,
@@ -39,7 +46,6 @@ export class ScrimsController {
         new ParseFilePipe({
             validators: [
             new MaxFileSizeValidator({ maxSize: 8 * 1024 * 1024 }),
-            new FileTypeValidator({ fileType: /(image\/jpeg|image\/png|image\/webp)/ }),
             ],
             fileIsRequired: true,
         }),
@@ -53,6 +59,7 @@ export class ScrimsController {
 
     @Post("parse-screenshot")
     @UseGuards(TeamFullGuard)
+    @Serialize(ParseScrimScreenshotResponseDto)
     @UseInterceptors(FileInterceptor("screenshot", scrimParseMulterOptions))
     async parseScreenshot(
         @Param("teamId") teamId: string,
@@ -61,7 +68,6 @@ export class ScrimsController {
         new ParseFilePipe({
             validators: [
             new MaxFileSizeValidator({ maxSize: 8 * 1024 * 1024 }),
-            new FileTypeValidator({ fileType: /(image\/jpeg|image\/png|image\/webp)/ }),
             ],
             fileIsRequired: true,
         }),

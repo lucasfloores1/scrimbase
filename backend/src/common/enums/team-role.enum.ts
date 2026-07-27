@@ -3,3 +3,8 @@ export enum TeamRole {
     COACH = 'COACH',
     MANAGER = 'MANAGER',
 }
+
+export enum MatchSide {
+    ATTACK = 'ATTACK',
+    DEFENSE = 'DEFENSE',
+}

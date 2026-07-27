@@ -4,8 +4,6 @@ import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { ConfigService } from '@nestjs/config';
 import { StringValue } from 'ms';
-import { access } from 'fs';
-
 @Injectable()
 export class AuthService {
     constructor(

@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose/dist/common/mongoose.decorators';
 import { Team } from './schemas/team.schema';
 import { Model, Types } from 'mongoose';
-import { TeamMember, TeamRole } from './schemas/team-member.schema';
+import { TeamRole } from './schemas/team-member.schema';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { TeamMemberService } from './team-member.service';
 import { generateInviteCode } from './utils/invite-code';
@@ -14,7 +14,7 @@ export class TeamsService {
         private readonly teamMemberService: TeamMemberService,
     ) {}
 
-    async createTeam( userId: string, dto: CreateTeamDto ) {
+    async createTeam(userId: string, dto: CreateTeamDto) {
         const existingMembership = await this.teamMemberService.getUserMembership(userId);
         if (existingMembership) {
             throw new BadRequestException('User is already a member of a team');
@@ -23,25 +23,27 @@ export class TeamsService {
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
                 const team = await this.teamModel.create({
-                name: dto.name,
-                tag: dto.tag,
-                createdBy: new Types.ObjectId(userId),
-                inviteCode: generateInviteCode(),
+                    name: dto.name,
+                    tag: dto.tag,
+                    createdBy: new Types.ObjectId(userId),
+                    inviteCode: generateInviteCode(),
                 });
-                console.log("creating owner with userid: ", userId, " and teamId: ", team._id.toString())
+
                 await this.teamMemberService.createOwner(userId, team._id.toString());
 
-                return team;
+                return team.toObject();
             } catch (err: any) {
-                if (err?.code === 11000 && err?.keyPattern?.inviteCode) { continue }
+                if (err?.code === 11000 && err?.keyPattern?.inviteCode) {
+                    continue;
+                }
                 throw err;
             }
         }
 
-        throw new BadRequestException('Could not generate invite code. Please try again.',);
+        throw new BadRequestException('Could not generate invite code. Please try again.');
     }
 
-    async joinTeam( userId: string, teamId: string ) {
+    async joinTeam(userId: string, teamId: string) {
         const existingMembership = await this.teamMemberService.getUserMembership(userId);
         if (existingMembership) {
             throw new BadRequestException('User is already a member of a team');
@@ -53,16 +55,24 @@ export class TeamsService {
         return this.teamMemberService.createMember(userId, teamId, TeamRole.PLAYER);
     }
 
-    async getTeamById( teamId: string ) {
-        return this.teamModel.findById( new Types.ObjectId(teamId) ).exec();
+    async getTeamById(teamId: string) {
+        const team = await this.teamModel
+            .findById(new Types.ObjectId(teamId))
+            .lean()
+            .exec();
+
+        if (!team) return null;
+
+        return team;
     }
 
-    async getUserTeam( userId: string ) {
+    async getUserTeam(userId: string) {
         const membership = await this.teamMemberService.getUserMembership(userId);
-        return membership ?? null;
+        if (!membership) return null;
+        return this.getTeamById(membership.teamId);
     }
 
-    async joinByInviteCode( userId: string, inviteCode: string ) {
+    async joinByInviteCode(userId: string, inviteCode: string) {
         const existingMembership = await this.teamMemberService.getUserMembership(userId);
         if (existingMembership) {
             throw new BadRequestException('User already belongs to a team');
@@ -74,5 +84,4 @@ export class TeamsService {
         }
         return this.teamMemberService.createMember(userId, team._id.toString(), TeamRole.PLAYER);
     }
-
 }

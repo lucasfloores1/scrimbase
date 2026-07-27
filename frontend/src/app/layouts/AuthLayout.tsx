@@ -10,7 +10,7 @@ export function AuthLayout() {
         <div className="w-full max-w-md">
           <Card className="border-slate-800 bg-slate-900/40">
             <CardHeader>
-              <CardTitle>Welcome</CardTitle>
+              <CardTitle className="text-slate-200">Scrimbase</CardTitle>
             </CardHeader>
             <CardContent>
               <Outlet />

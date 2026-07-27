@@ -1,11 +1,22 @@
-import { IsOptional, IsString } from "class-validator";
+import { IsEnum, IsOptional, IsString } from "class-validator";
+import { MatchSide } from "src/common/enums/team-role.enum";
 
 export class UpdateStratDto {
-    @IsString()
-    @IsOptional()
-    map? : string;
 
     @IsString()
     @IsOptional()
-    notes? : string;
+    name?: string;
+
+    @IsString()
+    @IsOptional()
+    map?: string;
+
+    @IsEnum(MatchSide)
+    @IsOptional()
+    side?: MatchSide;
+
+    @IsString()
+    @IsOptional()
+    notes?: string;
+
 }

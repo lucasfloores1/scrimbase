@@ -30,7 +30,7 @@ export class ScrimPlayerStat {
 
 export const ScrimPlayerStatSchema = SchemaFactory.createForClass(ScrimPlayerStat);
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, versionKey: false})
 export class Scrim {
 
     @Prop({ type: Types.ObjectId, ref: 'Team', required: true })

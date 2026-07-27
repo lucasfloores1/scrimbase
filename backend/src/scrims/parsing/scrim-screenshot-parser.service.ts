@@ -7,10 +7,9 @@ import { validate } from "class-validator";
 import { ConfigService } from "@nestjs/config";
 
 import { LlmVisionService } from "../../common/llm/llm-vision.service";
-import { CreateScrimDto } from "../dto/create-scrim.dto";
 import { ScrimOutcome } from "../enums/scrim-outcome.enum";
 import { ScrimType } from "../enums/scrim-type.enum";
-import { ParseScrimScreenshotResponseDto } from "./dto/parse-scrim-screenshot-response.dto";
+import { ParseScrimScreenshotResponseDto } from "./dto/parse-scrim.response.dto";
 import { ScrimParseAttempt, ScrimParseAttemptStatus } from "./schemas/scrim-parse-attempt.schema";
 import { LlmScrimExtractionDto } from "./dto/llm-scrim-extraction.dto";
 import { TeamMemberService } from "src/teams/team-member.service";
@@ -131,28 +130,32 @@ export class ScrimScreenshotParserService {
     }
 
     // 5) Match teamStats displayName -> team member riotId (and set userId)
-    const teamMembers = await this.teamMemberService.getTeamMembers(teamId);
+    const teamMembers = await this.teamMemberService.getTeamMembersForMatching(teamId);
     const matchResult = this.matchTeamStatsToMembers(instance.teamStats, teamMembers);
 
-    const matchedTeamStats = matchResult.teamStats;
+    const matchedTeamStats = matchResult.teamStats.map((p) => ({
+      userId: p.userId ?? undefined,
+      displayName: p.displayName,
+      agent: p.agent,
+      kills: p.kills,
+      deaths: p.deaths,
+      assists: p.assists,
+      acs: p.acs,
+    }));
     const warnings = [...matchResult.warnings];
 
     // 6) Build enemyComposition from enemyStats
     const enemyComposition = this.buildEnemyComposition(instance.enemyStats);
 
-    // 7) Build draft
-    const draft: CreateScrimDto = {
+    // 7) Build draft as a plain object matching DraftScrimResponseDto
+    const draft = {
       type,
       map,
       teamRounds: instance.teamRounds,
       enemyRounds: instance.enemyRounds,
-      teamStats: matchedTeamStats, // ✅ usar los matcheados
+      outcome: this.computeOutcome(instance.teamRounds, instance.enemyRounds),
+      teamStats: matchedTeamStats,
       enemyComposition,
-    };
-
-    const draftWithOutcome = {
-      ...draft,
-      outcome: this.computeOutcome(draft.teamRounds, draft.enemyRounds),
     };
 
     // warnings: unknown agents
@@ -168,7 +171,7 @@ export class ScrimScreenshotParserService {
     return {
       rawOutputId: attempt._id.toString(),
       warnings,
-      draft: draftWithOutcome,
+      draft,
     };
   }
 
@@ -274,37 +277,46 @@ Rules:
     const candidates = teamMembers
       .map((m) => {
         const user = m.userId;
+
         const riotId: string | undefined = user?.riotId;
+        const altAccountId: string | undefined = user?.altAccountId;
+
         const userId: string | undefined = user?._id?.toString?.() ?? user?._id;
 
-        const riotName = riotId ? this.extractRiotName(riotId) : "";
-        const riotNameNorm = this.normalizeSimple(riotName);
+        const primaryName = riotId ? this.extractRiotName(riotId) : "";
+        const primaryNameNorm = this.normalizeSimple(primaryName);
 
-        return { userId, riotId, riotNameNorm };
+        const altName = altAccountId ? this.extractRiotName(altAccountId) : "";
+        const altNameNorm = this.normalizeSimple(altName);
+
+        return { userId, riotId, primaryNameNorm, altNameNorm };
       })
-      .filter((c) => c.userId && c.riotNameNorm);
+      .filter((c) => c.userId && (c.primaryNameNorm || c.altNameNorm));
 
     const usedUserIds = new Set<string>();
 
     const out = teamStats.map((stat) => {
       const original = (stat.displayName ?? "").trim();
-
       const scoreboardName = this.normalizeSimple(this.extractScoreboardName(original));
 
       let best: { userId: string; riotId?: string; score: number } | null = null;
 
       for (const c of candidates) {
-        if (usedUserIds.has(c.userId!)) continue;
+        if (!c.userId) continue;
+        if (usedUserIds.has(c.userId)) continue;
 
-        // 1) exact match
-        if (scoreboardName && scoreboardName === c.riotNameNorm) {
-          best = { userId: c.userId!, riotId: c.riotId, score: 1 };
+        const primary = c.primaryNameNorm ?? "";
+        const alt = c.altNameNorm ?? "";
+
+        // 1) exact match (primary or alt)
+        if (scoreboardName && (scoreboardName === primary || scoreboardName === alt)) {
+          best = { userId: c.userId, riotId: c.riotId, score: 1 };
           break;
         }
 
-        // 2) fuzzy fallback
-        const score = this.similarity(scoreboardName, c.riotNameNorm);
-        if (!best || score > best.score) best = { userId: c.userId!, riotId: c.riotId, score };
+        // 2) fuzzy fallback (best of primary/alt)
+        const score = Math.max(this.similarity(scoreboardName, primary), this.similarity(scoreboardName, alt));
+        if (!best || score > best.score) best = { userId: c.userId, riotId: c.riotId, score };
       }
 
       if (best && best.score >= 0.85) {
@@ -313,6 +325,7 @@ Rules:
         return {
           ...stat,
           userId: best.userId,
+          // ✅ always show MAIN riotId, even if match was by alt
           displayName: best.riotId ?? original,
         };
       }

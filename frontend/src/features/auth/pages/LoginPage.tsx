@@ -1,5 +1,7 @@
+import { LoginForm } from "@/features/auth/components/LoginForm";
+
 export function LoginPage() {
-    return <div className="text-slate-200">Login (coming soon)</div>;
+  return <LoginForm />;
 }
 
 export default LoginPage;

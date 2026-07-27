@@ -6,12 +6,31 @@ export interface TeamMember {
   teamId: string;
   role: TeamRole;
   isAdmin: boolean;
-  joinedAt: string;
+  joinedAt?: string;
+}
+
+export interface TeamMemberUser {
+  id: string;
+  username: string;
+  riotId?: string;
+  altAccountId?: string;
+}
+
+export interface TeamMemberListItem {
+  id: string;
+  teamId: string;
+  role: TeamRole;
+  isAdmin: boolean;
+  joinedAt?: string;
+  user: TeamMemberUser;
 }
 
 export interface AuthUser {
   userId: string;
   email: string;
+  username?: string;
+  riotId?: string;
+  altAccountId?: string;
   teamMember: TeamMember | null;
 }
 
@@ -20,5 +39,6 @@ export interface Team {
   name: string;
   tag: string;
   createdBy: string;
-  createdAt: string;
+  inviteCode: string;
+  createdAt?: string;
 }

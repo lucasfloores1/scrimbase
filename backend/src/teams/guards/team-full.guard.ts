@@ -10,7 +10,11 @@ export class TeamFullGuard implements CanActivate {
         const membership = req.user?.teamMember;
 
         const paramTeamId = req.params?.teamId;
-        const memberTeamId = membership.teamId?._id.toString?.() ?? membership.teamId._id;
+        const rawTeamId = membership.teamId;
+        const memberTeamId =
+        typeof rawTeamId === "string"
+            ? rawTeamId
+            : (rawTeamId?._id?.toString?.() ?? rawTeamId?.toString?.() ?? String(rawTeamId?._id ?? rawTeamId));
 
         const teamId = paramTeamId ?? memberTeamId;
         const count = await this.teamMemberService.countTeamMembers(teamId);

@@ -3,10 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
-/**
- * MockDashboard is only for marketing purposes.
- * It visually represents what the real dashboard will look like.
- */
+
 function MockDashboard() {
   return (
     <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 shadow-sm">

@@ -3,7 +3,7 @@ import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, versionKey: false })
 export class User {
     @Prop({ required: true, unique: true })
     email: string;
@@ -22,6 +22,13 @@ export class User {
 
     @Prop({ unique: true, sparse : true})
     riotIdNormalized?: string;
+
+    @Prop()
+    altAccountId?: string;
+
+    @Prop({ unique: true, sparse : true})
+    altAccountIdNormalized?: string;
+
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

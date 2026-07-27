@@ -1,6 +1,6 @@
 import { ArrayMaxSize, ArrayMinSize, IsArray, IsInt, Max, Min, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
-import { ScrimPlayerStatDto } from "../../dto/scrim-player-stat.dto";
+import { LlmScrimPlayerStatDto } from "./llm-scrim-player-stat.dto";
 
 export class LlmScrimExtractionDto {
   @IsInt()
@@ -17,13 +17,13 @@ export class LlmScrimExtractionDto {
   @ArrayMinSize(5)
   @ArrayMaxSize(5)
   @ValidateNested({ each: true })
-  @Type(() => ScrimPlayerStatDto)
-  teamStats: ScrimPlayerStatDto[];
+  @Type(() => LlmScrimPlayerStatDto)
+  teamStats: LlmScrimPlayerStatDto[];
 
   @IsArray()
   @ArrayMinSize(5)
   @ArrayMaxSize(5)
   @ValidateNested({ each: true })
-  @Type(() => ScrimPlayerStatDto)
-  enemyStats: ScrimPlayerStatDto[];
+  @Type(() => LlmScrimPlayerStatDto)
+  enemyStats: LlmScrimPlayerStatDto[];
 }

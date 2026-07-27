@@ -10,6 +10,6 @@ export const authApi = {
         return http.post<LoginResponse>("/auth/refresh", dto).then(res => res.data);
     },
     me() {
-        return http.get<AuthUser>("/auth/me").then(res => res.data);
+        return http.get<AuthUser>("/users/me").then(res => res.data);
     },
 }

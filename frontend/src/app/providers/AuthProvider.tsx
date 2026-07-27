@@ -1,3 +1,4 @@
+
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from "react";
 import { authApi } from "@/shared/api/auth.api";
 import { tokenStorage } from "@/shared/lib/storage";
@@ -10,7 +11,7 @@ type AuthState = {
   isAuthed: boolean;
   hasTeam: boolean;
   bootstrap: () => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<AuthUser>;
   logout: () => void;
 };
 
@@ -20,12 +21,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isAuthed = !!tokenStorage.getAccess();
   const hasTeam = !!user?.teamMember?.teamId;
 
   async function bootstrap() {
     if (!tokenStorage.getAccess()) {
-      //DEV bypass
+      // DEV bypass
       if (env.DEV_BYPASS_AUTH) {
         setUser({
           userId: "dev-user",
@@ -61,12 +61,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(email: string, password: string) {
     const tokens = await authApi.login({ email, password });
+
     tokenStorage.setAccess(tokens.accessToken);
     tokenStorage.setRefresh(tokens.refreshToken);
 
-    // Brings the real user including teamMember populated
     const me = await authApi.me();
     setUser(me);
+    return me;
   }
 
   function logout() {
@@ -79,7 +80,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthState>(
-    () => ({ user, isLoading, isAuthed: !!user, hasTeam, bootstrap, login, logout }),
+    () => ({
+      user,
+      isLoading,
+      isAuthed: !!user,
+      hasTeam,
+      bootstrap,
+      login,
+      logout,
+    }),
     [user, isLoading, hasTeam]
   );
 

@@ -4,6 +4,9 @@ import { useAuth } from "@/app/providers/AuthProvider";
 export function RequireTeam() {
   const { isLoading, isAuthed, hasTeam } = useAuth();
 
+  console.log("Require Team status","is Authed", isAuthed,"hasTeam", hasTeam);
+
+  
   if (isLoading) return null; // change for loading state
   if (!isAuthed) return <Navigate to="/login" replace />;
   if (!hasTeam) return <Navigate to="/onboarding" replace />;

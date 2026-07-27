@@ -8,11 +8,16 @@ export class TeamMemberGuard implements CanActivate {
         const membership = req.user?.teamMember;
 
         const paramTeamId = req.params?.teamId;
-        const memberTeamId = membership.teamId?._id.toString?.() ?? membership.teamId._id;
 
         if (!membership) {
             throw new ForbiddenException('User is not a member of any team');
         }
+
+        const rawTeamId = membership.teamId;
+        const memberTeamId =
+        typeof rawTeamId === "string"
+            ? rawTeamId
+            : (rawTeamId?._id?.toString?.() ?? rawTeamId?.toString?.() ?? String(rawTeamId?._id ?? rawTeamId));
 
         if (paramTeamId) {
             if (!paramTeamId || memberTeamId !== paramTeamId) {

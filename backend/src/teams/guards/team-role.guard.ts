@@ -7,6 +7,7 @@ export const TeamRoleGuard = ( allowedRoles: TeamRole[] ) => {
     class RoleGuard implements CanActivate {
         canActivate(context: ExecutionContext): boolean {
             const req = context.switchToHttp().getRequest();
+            
             const role = req.user?.teamMember?.role;
 
             if (!role || !allowedRoles.includes(role)) {
