@@ -1,10 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { teamsApi } from "@/shared/api/teams.api";
 import type { TeamMemberListItem, TeamRole } from "@/shared/types/models";
 import { PageHeader } from "@/shared/ui/PageHeader";
 import { LoadingState } from "@/shared/ui/feedback/LoadingState";
 import { ErrorState } from "@/shared/ui/feedback/ErrorState";
 import { cn } from "@/lib/utils";
+import { ChevronRight } from "lucide-react";
 
 function roleLabel(role: TeamRole, isAdmin: boolean) {
   if (isAdmin) return "Admin";
@@ -14,6 +16,7 @@ function roleLabel(role: TeamRole, isAdmin: boolean) {
 }
 
 export function TeamPage() {
+  const navigate = useNavigate();
   const query = useQuery({
     queryKey: ["teamMembers"],
     queryFn: () => teamsApi.getTeamMembers(),
@@ -47,7 +50,7 @@ export function TeamPage() {
       <PageHeader
         eyebrow="Roster"
         title="Team"
-        description={`${members.length} members in your workspace.`}
+        description={`${members.length} members in your workspace. Click a teammate to open their stats.`}
       />
 
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
@@ -58,34 +61,52 @@ export function TeamPage() {
               <th className="px-4 py-3 font-medium">Riot ID</th>
               <th className="px-4 py-3 font-medium">Alt</th>
               <th className="px-4 py-3 font-medium">Role</th>
+              <th className="px-4 py-3 font-medium">
+                <span className="sr-only">Open stats</span>
+              </th>
             </tr>
           </thead>
           <tbody>
-            {members.map((m) => (
-              <tr key={m.id} className="border-b border-border/70 last:border-0">
-                <td className="px-4 py-3.5 font-medium whitespace-nowrap">
-                  {m.user?.username ?? "—"}
-                </td>
-                <td className="px-4 py-3.5 whitespace-nowrap text-muted-foreground">
-                  {m.user?.riotId ?? "—"}
-                </td>
-                <td className="px-4 py-3.5 whitespace-nowrap text-muted-foreground">
-                  {m.user?.altAccountId ?? "—"}
-                </td>
-                <td className="px-4 py-3.5">
-                  <span
-                    className={cn(
-                      "inline-flex rounded-md border px-2 py-0.5 text-xs font-medium",
-                      m.isAdmin
-                        ? "border-ink/15 bg-ink text-signal"
-                        : "border-border bg-muted text-muted-foreground",
-                    )}
-                  >
-                    {roleLabel(m.role, m.isAdmin)}
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {members.map((m) => {
+              const playerId = m.user?.id;
+              return (
+                <tr
+                  key={m.id}
+                  className={cn(
+                    "border-b border-border/70 last:border-0",
+                    playerId && "hover:bg-muted/40 cursor-pointer transition-colors",
+                  )}
+                  onClick={() => {
+                    if (playerId) navigate(`/app/team/${playerId}`);
+                  }}
+                >
+                  <td className="px-4 py-3.5 font-medium whitespace-nowrap">
+                    {m.user?.username ?? "—"}
+                  </td>
+                  <td className="px-4 py-3.5 whitespace-nowrap text-muted-foreground">
+                    {m.user?.riotId ?? "—"}
+                  </td>
+                  <td className="px-4 py-3.5 whitespace-nowrap text-muted-foreground">
+                    {m.user?.altAccountId ?? "—"}
+                  </td>
+                  <td className="px-4 py-3.5">
+                    <span
+                      className={cn(
+                        "inline-flex rounded-md border px-2 py-0.5 text-xs font-medium",
+                        m.isAdmin
+                          ? "border-ink/15 bg-ink text-signal"
+                          : "border-border bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {roleLabel(m.role, m.isAdmin)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3.5 text-right text-muted-foreground">
+                    {playerId ? <ChevronRight className="ml-auto h-4 w-4" /> : null}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

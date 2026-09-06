@@ -1,4 +1,5 @@
 import type { ValorantAgentOrUnknown, ValorantMap } from "@/shared/constants/valorant";
+import type { TeamMemberListItem } from "@/shared/types/models";
 
 export interface LoginDto {
   email: string;
@@ -169,6 +170,69 @@ export interface ListScrimsQuery {
   limit?: number;
   from?: string;
   to?: string;
+}
+
+// ---------- Player stats (GET /teams/:teamId/members/:userId/stats) ----------
+
+export interface PlayerCombatOverviewDto {
+  matches: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  winrate: number;
+  kills: number;
+  deaths: number;
+  assists: number;
+  avgKills: number;
+  avgDeaths: number;
+  avgAssists: number;
+  avgAcs: number;
+  kd: number;
+}
+
+export interface PlayerAgentStatsDto {
+  name: string;
+  matches: number;
+  wins: number;
+  winrate: number;
+  avgAcs: number;
+  kd: number;
+}
+
+export interface PlayerMapStatsDto {
+  name: string;
+  matches: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  winrate: number;
+  avgAcs: number;
+  kd: number;
+}
+
+export interface PlayerRecentScrimDto {
+  id: string;
+  type: ScrimType;
+  map: ValorantMap;
+  outcome: ScrimOutcome;
+  opponentName: string;
+  teamRounds: number;
+  enemyRounds: number;
+  agent: ValorantAgentOrUnknown;
+  kills: number;
+  deaths: number;
+  assists: number;
+  acs: number;
+  createdAt: string;
+}
+
+export interface PlayerStatsResponseDto {
+  player: TeamMemberListItem;
+  overview: PlayerCombatOverviewDto;
+  last10: PlayerCombatOverviewDto;
+  agents: PlayerAgentStatsDto[];
+  maps: PlayerMapStatsDto[];
+  recentScrims: PlayerRecentScrimDto[];
 }
 
 // ---------- Users (PUT /users/me) ----------

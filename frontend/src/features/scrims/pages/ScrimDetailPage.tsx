@@ -83,8 +83,24 @@ export default function ScrimDetailPage() {
             </thead>
             <tbody>
               {s.teamStats.map((p, i) => (
-                <tr key={i} className="border-b border-border/70 last:border-0">
-                  <td className="px-4 py-3 font-medium">{p.displayName ?? "—"}</td>
+                <tr
+                  key={i}
+                  className={
+                    p.userId
+                      ? "border-b border-border/70 last:border-0 hover:bg-muted/40 cursor-pointer transition-colors"
+                      : "border-b border-border/70 last:border-0"
+                  }
+                  onClick={() => {
+                    if (p.userId) navigate(`/app/team/${p.userId}`);
+                  }}
+                >
+                  <td className="px-4 py-3 font-medium">
+                    {p.userId ? (
+                      <span className="underline-offset-4 hover:underline">{p.displayName ?? "—"}</span>
+                    ) : (
+                      (p.displayName ?? "—")
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-muted-foreground">{p.agent}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{p.kills}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{p.deaths}</td>

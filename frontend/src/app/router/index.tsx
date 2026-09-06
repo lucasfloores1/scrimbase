@@ -13,6 +13,7 @@ import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { RegisterPage } from "@/features/auth/pages/RegisterPage";
 import { OnboardingPage } from "@/features/onboarding/pages/OnboardingPage";
 import { DashboardPage } from "@/features/team/pages/DashboardPage";
+import { PlayerStatsPage } from "@/features/team/pages/PlayerStatsPage";
 import ScrimCreatePage from "@/features/scrims/pages/ScrimCreatePage";
 import ScrimsListPage from "@/features/scrims/pages/ScrimsListPage";
 import ScrimDetailPage from "@/features/scrims/pages/ScrimDetailPage";
@@ -63,6 +64,7 @@ export const router = createBrowserRouter([
                 ],
               },
               { path: "/app/team", element: <TeamPage /> },
+              { path: "/app/team/:userId", element: <PlayerStatsPage /> },
               { path: "/app/settings", element: <SettingsPage /> },
             ],
           },

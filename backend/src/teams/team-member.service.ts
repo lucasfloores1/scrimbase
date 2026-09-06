@@ -61,35 +61,24 @@ export class TeamMemberService {
             .lean()
             .exec();
 
-        return docs.map((doc) => {
-            const user = doc.userId as unknown as {
-                _id: Types.ObjectId;
-                username: string;
-                riotId?: string;
-                altAccountId?: string;
-            } | null;
+        return docs.map((doc) => this.toListItemPlain(doc));
+    }
 
-            return {
-                id: String(doc._id),
-                teamId: String(doc.teamId),
-                role: doc.role,
-                isAdmin: doc.isAdmin,
-                joinedAt:
-                    doc.joinedAt instanceof Date
-                        ? doc.joinedAt.toISOString()
-                        : doc.joinedAt
-                          ? String(doc.joinedAt)
-                          : undefined,
-                user: user
-                    ? {
-                          id: String(user._id),
-                          username: user.username,
-                          riotId: user.riotId,
-                          altAccountId: user.altAccountId,
-                      }
-                    : null,
-            };
-        });
+    async getMemberOnTeam(teamId: string, userId: string) {
+        if (!Types.ObjectId.isValid(teamId) || !Types.ObjectId.isValid(userId)) {
+            return null;
+        }
+
+        const doc = await this.teamMemberModel
+            .findOne({
+                teamId: new Types.ObjectId(teamId),
+                userId: new Types.ObjectId(userId),
+            })
+            .populate('userId', 'username riotId altAccountId')
+            .lean()
+            .exec();
+
+        return doc ? this.toListItemPlain(doc) : null;
     }
 
     async countAdmins(teamId: string) {
@@ -233,6 +222,45 @@ export class TeamMemberService {
             .find({ teamId: new Types.ObjectId(teamId) })
             .populate('userId', 'username email riotId riotIdNormalized altAccountId altAccountIdNormalized')
             .exec();
+    }
+
+    private toListItemPlain(doc: {
+        _id: unknown;
+        userId: unknown;
+        teamId: unknown;
+        role: TeamRole;
+        isAdmin: boolean;
+        joinedAt?: Date | string;
+    }) {
+        const user = doc.userId as unknown as {
+            _id: Types.ObjectId;
+            username: string;
+            riotId?: string;
+            altAccountId?: string;
+        } | null;
+
+        const populated = user && typeof user === 'object' && '_id' in user && 'username' in user;
+
+        return {
+            id: String(doc._id),
+            teamId: String(doc.teamId),
+            role: doc.role,
+            isAdmin: doc.isAdmin,
+            joinedAt:
+                doc.joinedAt instanceof Date
+                    ? doc.joinedAt.toISOString()
+                    : doc.joinedAt
+                      ? String(doc.joinedAt)
+                      : undefined,
+            user: populated
+                ? {
+                      id: String(user._id),
+                      username: user.username,
+                      riotId: user.riotId,
+                      altAccountId: user.altAccountId,
+                  }
+                : null,
+        };
     }
 
     private toMembershipPlain(doc: {

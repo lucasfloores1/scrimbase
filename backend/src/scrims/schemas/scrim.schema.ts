@@ -76,3 +76,4 @@ ScrimSchema.index({ teamId: 1, outcome: 1, createdAt: -1 });
 ScrimSchema.index({ teamId: 1, type: 1, createdAt: -1 });
 ScrimSchema.index({ teamId: 1, opponentName: 1 });
 ScrimSchema.index({ teamId: 1, enemyComposition: 1 });
+ScrimSchema.index({ teamId: 1, "teamStats.userId": 1, createdAt: -1 });
