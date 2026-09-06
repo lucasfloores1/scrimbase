@@ -5,6 +5,8 @@ import { WINSTON_MODULE_NEST_PROVIDER } from "nest-winston";
 import { Scrim } from "src/scrims/schemas/scrim.schema";
 import { Team } from "src/teams/schemas/team.schema";
 import { ScrimOutcome } from "src/scrims/enums/scrim-outcome.enum";
+import { ScrimType } from "src/scrims/enums/scrim-type.enum";
+import { ValorantMap } from "src/common/enums/valorant-map.enum";
 import {
   DashboardBestMapDto,
   DashboardResponseDto,
@@ -37,9 +39,9 @@ type DashboardAggregationResult = {
   }>;
   recentScrims: Array<{
     id: string;
-    type: string;
-    map: string;
-    outcome: string;
+    type: ScrimType;
+    map: ValorantMap;
+    outcome: ScrimOutcome;
     teamRounds: number;
     enemyRounds: number;
     createdAt: Date;
@@ -267,9 +269,9 @@ export class DashboardService {
       recentScrims:
         agg?.recentScrims?.map((s) => ({
           id: s.id,
-          type: s.type as any,
+          type: s.type,
           map: s.map,
-          outcome: s.outcome as any,
+          outcome: s.outcome,
           teamRounds: s.teamRounds,
           enemyRounds: s.enemyRounds,
           createdAt: new Date(s.createdAt).toISOString(),

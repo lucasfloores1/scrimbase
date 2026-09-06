@@ -1,6 +1,7 @@
 import { Exclude, Expose, Transform } from "class-transformer";
 import { MatchSide } from "src/common/enums/team-role.enum";
 import { toIdString, toIsoDate, toRefId } from "src/common/utils/serialize.utils";
+import { ValorantMap } from "src/common/enums/valorant-map.enum";
 
 @Exclude()
 export class StratResponseDto {
@@ -20,9 +21,8 @@ export class StratResponseDto {
   name: string;
 
   @Expose()
-  map: string;
+  map: ValorantMap;
 
-  /** Optional: older documents may predate this field. */
   @Expose()
   side?: MatchSide;
 

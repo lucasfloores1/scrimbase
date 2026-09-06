@@ -1,102 +1,69 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useState } from "react";
-import { Plus } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Input } from "@base-ui/react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import useCreateTeam from "../hooks/useCreateTeam";
+import { Plus } from "lucide-react";
 
 function errorToMessage(err: unknown): string {
-    if (!err) return "";
-    if (err instanceof Error) return err.message;
-    return "No se pudo unirse al equipo.";
+  if (!err) return "";
+  if (err instanceof Error) return err.message;
+  return "Could not create team.";
 }
 
 export function CreateTeamCard() {
-    const { create, isPending, error } = useCreateTeam();
-    
-    const [name, setName] = useState("");
-    const [tag, setTag] = useState("");
+  const { create, isPending, error } = useCreateTeam();
+  const [name, setName] = useState("");
+  const [tag, setTag] = useState("");
 
-    const canSubmit = !isPending;
+  function onSubmit(e: React.SubmitEvent) {
+    e.preventDefault();
+    create({ name, tag });
+  }
 
-    function onSubmit(e: React.SubmitEvent){
-        e.preventDefault();
-        create({ name: name, tag: tag })
-    }
-    return (
-        <Card className="border border-slate-800 bg-slate-950/40 shadow-lg">
-
-  <CardHeader className="space-y-2">
-
-    <div className="flex items-center gap-2">
-      <Plus className="h-5 w-5 text-blue-400" />
-
-      <CardTitle className="text-lg text-slate-100">
-        Crear un equipo
-      </CardTitle>
-    </div>
-
-    <CardDescription className="text-slate-400">
-      Creá un nuevo equipo e invitá a tus compañeros.
-    </CardDescription>
-
-  </CardHeader>
-
-  <CardContent>
-
-    <form onSubmit={onSubmit} className="space-y-4">
-
-      <div className="space-y-2">
-        <Label htmlFor="name" className="text-slate-200">
-          Nombre del equipo
-        </Label>
-
-        <Input
-          id="name"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Scrimbase Team"
-          className="border-slate-800 bg-slate-950/40 text-slate-100 placeholder:text-slate-500"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="tag" className="text-slate-200">
-          TAG del equipo
-        </Label>
-
-        <Input
-          id="tag"
-          type="text"
-          value={tag}
-          onChange={(e) => setTag(e.target.value)}
-          placeholder="#SCRIM"
-          className="border-slate-800 bg-slate-950/40 text-slate-100 placeholder:text-slate-500"
-        />
-      </div>
-
-      {error && (
-        <div className="rounded-md border border-red-700/30 bg-red-600/10 px-3 py-2 text-sm text-red-200">
-          {errorToMessage(error)}
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-6 space-y-5">
+      <div className="space-y-1">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Plus className="h-4 w-4" />
+          <span className="text-[11px] font-medium uppercase tracking-[0.16em]">Create</span>
         </div>
-      )}
+        <h2 className="font-display text-lg font-semibold tracking-tight">New team</h2>
+        <p className="text-sm text-muted-foreground">Start a workspace and invite your roster.</p>
+      </div>
 
-      <Button
-        type="submit"
-        disabled={!canSubmit}
-        className="w-full bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-60"
-      >
-        {isPending ? "Creando..." : "Crear equipo"}
-      </Button>
-
-    </form>
-
-  </CardContent>
-
-</Card>
-    );
+      <form onSubmit={onSubmit} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Team name</Label>
+          <Input
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Aconis"
+            className="bg-background h-10"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="tag">Tag</Label>
+          <Input
+            id="tag"
+            value={tag}
+            onChange={(e) => setTag(e.target.value.toUpperCase())}
+            placeholder="ACN"
+            className="bg-background h-10"
+          />
+        </div>
+        {error ? (
+          <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+            {errorToMessage(error)}
+          </div>
+        ) : null}
+        <Button type="submit" disabled={isPending || !name || !tag} className="w-full h-10">
+          {isPending ? "Creating…" : "Create team"}
+        </Button>
+      </form>
+    </div>
+  );
 }
 
 export default CreateTeamCard;

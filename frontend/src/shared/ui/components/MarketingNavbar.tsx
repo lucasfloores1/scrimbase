@@ -4,25 +4,28 @@ import { env } from "@/shared/config/env";
 
 export function MarketingNavbar() {
   return (
-    <header className="border-b border-slate-800 bg-slate-950/70 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-        <Link to="/" className="font-semibold tracking-tight text-slate-100">
+    <header className="absolute inset-x-0 top-0 z-20">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:px-6">
+        <Link
+          to="/"
+          className="font-display text-sm font-semibold tracking-tight text-white"
+        >
           Scrimbase
         </Link>
 
         <div className="flex items-center gap-2">
-          {env.DEV_BYPASS_AUTH && (
-            <Button asChild variant="outline" className="border-slate-800 bg-slate-950">
-              <Link to="/app">Enter demo</Link>
+          {env.DEV_BYPASS_AUTH ? (
+            <Button asChild variant="ghost" className="text-white/80 hover:bg-white/10 hover:text-white">
+              <Link to="/app">Demo</Link>
             </Button>
-          )}
+          ) : null}
 
-          <Button asChild variant="ghost" className="text-slate-200 hover:bg-slate-900">
-            <Link to="/login">Login</Link>
+          <Button asChild variant="ghost" className="text-white/80 hover:bg-white/10 hover:text-white">
+            <Link to="/login">Log in</Link>
           </Button>
 
-          <Button asChild className="bg-blue-600 hover:bg-blue-700">
-            <Link to="/register">Register</Link>
+          <Button asChild className="bg-signal text-signal-foreground hover:bg-signal/90">
+            <Link to="/register">Get started</Link>
           </Button>
         </div>
       </div>

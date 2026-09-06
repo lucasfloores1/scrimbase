@@ -1,34 +1,48 @@
 import CreateTeamCard from "../components/CreateTeamCard";
 import JoinTeamCard from "../components/JoinTeamCard";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/app/providers/AuthProvider";
 
 export function OnboardingPage() {
-    return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 flex pt-10 justify-center px-6">
+  const { logout } = useAuth();
 
-      <div className="w-full max-w-5xl">
-
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold tracking-tight">
-            Bienvenido 👋
-          </h1>
-
-          <p className="text-slate-400 mt-2">
-            Unete a un equipo o crea uno nuevo
-          </p>
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto flex min-h-screen max-w-4xl flex-col px-4 py-10 md:px-6">
+        <div className="flex items-center justify-between">
+          <Link to="/" className="font-display text-sm font-semibold tracking-tight">
+            Scrimbase
+          </Link>
+          <button
+            type="button"
+            onClick={logout}
+            className="text-sm text-muted-foreground hover:text-foreground"
+          >
+            Log out
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="flex flex-1 flex-col justify-center py-12">
+          <div className="mb-10 max-w-lg space-y-2 animate-rise">
+            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              Onboarding
+            </p>
+            <h1 className="font-display text-3xl font-semibold tracking-tight text-balance">
+              One more step
+            </h1>
+            <p className="text-sm text-muted-foreground text-pretty">
+              Join your roster with an invite code, or create a new team workspace.
+            </p>
+          </div>
 
-          <JoinTeamCard />
-
-          <CreateTeamCard />
-
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 animate-rise-delay">
+            <JoinTeamCard />
+            <CreateTeamCard />
+          </div>
         </div>
-
       </div>
-
     </div>
-    );
+  );
 }
 
 export default OnboardingPage;

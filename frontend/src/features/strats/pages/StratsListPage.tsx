@@ -1,58 +1,43 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-
 import { useAuth } from "@/app/providers/AuthProvider";
 import { stratsApi } from "@/shared/api/strats.api";
 import type { StratDto } from "@/shared/types/dto";
-
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-
 import { LoadingState } from "@/shared/ui/feedback/LoadingState";
 import { ErrorState } from "@/shared/ui/feedback/ErrorState";
 import { EmptyState } from "@/shared/ui/feedback/EmptyState";
 
-export function StratsListPage() {
+function formatDate(iso?: string): string {
+  if (!iso) return "—";
+  try {
+    return new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
+}
+
+export default function StratsListPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const teamId = user?.teamMember?.teamId ?? null;
+  const teamId = user?.teamMember?.teamId;
 
   const query = useQuery({
     queryKey: ["strats", teamId],
-    queryFn: async () => {
-      if (!teamId) return [];
-      return stratsApi.list(teamId);
-    },
-    enabled: !!teamId,
-    staleTime: 15000,
+    queryFn: () => stratsApi.list(teamId!),
+    enabled: Boolean(teamId),
   });
 
   if (!teamId) {
-    return (
-      <EmptyState
-        title="No hay equipo activo"
-        description="Necesitás pertenecer a un equipo para ver strats."
-      />
-    );
+    return <EmptyState title="No team" description="Join a team to see strats." />;
   }
 
-  if (query.isLoading) {
-    return (
-      <LoadingState
-        title="Cargando strats"
-        description="Consultando estrategias del equipo..."
-      />
-    );
-  }
-
+  if (query.isLoading) return <LoadingState title="Loading strats" />;
   if (query.isError) {
-    const msg = query.error instanceof Error ? query.error.message : "Error inesperado";
-
     return (
       <ErrorState
-        title="No se pudo cargar la lista"
-        description={msg}
-        actionLabel="Reintentar"
+        title="Could not load strats"
+        description={query.error instanceof Error ? query.error.message : "Error"}
+        actionLabel="Retry"
         onAction={() => query.refetch()}
       />
     );
@@ -63,58 +48,34 @@ export function StratsListPage() {
   if (strats.length === 0) {
     return (
       <EmptyState
-        title="Todavía no hay strats"
-        description="Creá tu primera estrategia para empezar."
-        actionLabel="Crear strat"
+        title="No strats yet"
+        description="Save a setup with a screenshot and notes."
+        actionLabel="New strat"
         onAction={() => navigate("/app/strats/new")}
       />
     );
   }
 
   return (
-    <div className="space-y-4">
-
-      <Card className="border-slate-800 bg-slate-950/30">
-        <CardContent className="p-0">
-          <div className="w-full overflow-x-auto">
-            <table className="w-full text-sm">
-
-              <thead>
-                <tr className="border-b border-slate-800">
-                  <th className="px-4 py-3 text-left font-medium text-slate-400">
-                    Nombre
-                  </th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-400">
-                    Mapa
-                  </th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {strats.map((s) => (
-                  <tr
-                    key={s.id}
-                    className="border-b border-slate-900 hover:bg-slate-900/30 cursor-pointer"
-                    onClick={() => navigate(`/app/strats/${s.id}`)}
-                  >
-                    <td className="px-4 py-3 text-slate-200">
-                      {s.name}
-                    </td>
-
-                    <td className="px-4 py-3 text-slate-200">
-                      {s.map}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {strats.map((s) => (
+        <button
+          key={s.id}
+          type="button"
+          onClick={() => navigate(`/app/strats/${s.id}`)}
+          className="rounded-2xl border border-border bg-surface p-5 text-left transition-colors hover:bg-muted/40"
+        >
+          <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+            {s.map}
+            {s.side ? ` · ${s.side}` : ""}
+          </p>
+          <h3 className="mt-2 font-display text-lg font-semibold tracking-tight">{s.name}</h3>
+          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+            {s.notes || "No notes"}
+          </p>
+          <p className="mt-4 text-xs text-muted-foreground">{formatDate(s.createdAt)}</p>
+        </button>
+      ))}
     </div>
   );
 }
-
-export default StratsListPage;

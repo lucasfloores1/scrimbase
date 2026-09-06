@@ -1,140 +1,74 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { env } from "@/shared/config/env";
-
 import { useAuth } from "@/app/providers/AuthProvider";
 import { stratsApi } from "@/shared/api/strats.api";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { env } from "@/shared/config/env";
+import { PageHeader } from "@/shared/ui/PageHeader";
+import { ScreenshotPreview } from "@/shared/ui/ScreenshotPreview";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-
 import { LoadingState } from "@/shared/ui/feedback/LoadingState";
 import { ErrorState } from "@/shared/ui/feedback/ErrorState";
 
 export default function StratDetailPage() {
-
-  const navigate = useNavigate();
   const { stratId } = useParams();
-
+  const navigate = useNavigate();
   const { user } = useAuth();
-  const teamId = user?.teamMember?.teamId ?? null;
+  const teamId = user?.teamMember?.teamId;
 
   const query = useQuery({
     queryKey: ["strat", teamId, stratId],
-    queryFn: async () => {
-      if (!teamId) throw new Error("No hay teamId.");
-      if (!stratId) throw new Error("No hay stratId.");
-
-      return stratsApi.getOne(teamId, stratId);
-    },
-    enabled: !!teamId && !!stratId,
+    queryFn: () => stratsApi.getOne(teamId!, stratId!),
+    enabled: Boolean(teamId && stratId),
   });
 
-  if (query.isLoading) {
-    return <LoadingState title="Cargando strat" />;
-  }
-
-  if (query.isError) {
-    const msg = query.error instanceof Error ? query.error.message : "Error inesperado";
-
+  if (query.isLoading) return <LoadingState title="Loading strat" />;
+  if (query.isError || !query.data) {
     return (
       <ErrorState
-        title="No se pudo cargar la strat"
-        description={msg}
-        actionLabel="Volver"
+        title="Strat not found"
+        actionLabel="Back"
         onAction={() => navigate("/app/strats")}
       />
     );
   }
 
-  const s = query.data!;
+  const s = query.data;
+  const screenshotSrc = s.screenshotUrl ? `${env.assetsUrl}${s.screenshotUrl}` : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow={`${s.map}${s.side ? ` · ${s.side}` : ""}`}
+        title={s.name}
+        description={s.createdAt ? new Date(s.createdAt).toLocaleString() : undefined}
+        actions={
+          <Button variant="outline" onClick={() => navigate("/app/strats")}>
+            Back
+          </Button>
+        }
+      />
 
-      {/* Header */}
-
-      <header className="flex items-start justify-between gap-3">
-
-        <div className="space-y-1">
-          <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-100">
-            {s.name}
-          </h1>
-
-          <p className="text-sm text-slate-400">
-            Mapa: {s.map}
+      <div className="space-y-2">
+        <ScreenshotPreview
+          src={screenshotSrc}
+          alt={s.name}
+          emptyLabel="No screenshot"
+          lightboxTitle={s.name}
+          maxHeightClassName="max-h-[min(52vh,520px)]"
+        />
+        {screenshotSrc ? (
+          <p className="px-0.5 text-xs text-muted-foreground">
+            Click the screenshot to expand.
           </p>
-        </div>
-
-        <Button
-          variant="outline"
-          className="border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-900"
-          onClick={() => navigate("/app/strats")}
-        >
-          Volver
-        </Button>
-
-      </header>
-
-      <Separator className="bg-slate-800" />
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-
-        {/* Notes */}
-
-        <Card className="border-slate-800 bg-slate-950/30">
-
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-slate-200">
-              Notas
-            </CardTitle>
-          </CardHeader>
-
-          <CardContent>
-
-            {s.notes ? (
-              <p className="text-sm text-slate-300 whitespace-pre-line">
-                {s.notes}
-              </p>
-            ) : (
-              <p className="text-sm text-slate-500">
-                No hay notas para esta estrategia.
-              </p>
-            )}
-
-          </CardContent>
-
-        </Card>
-
-        {/* Screenshot */}
-
-        {s.screenshotUrl ? (
-          <Card className="border-slate-800 bg-slate-950/30">
-
-            <CardHeader>
-              <CardTitle className="text-sm font-medium text-slate-200">
-                Captura
-              </CardTitle>
-            </CardHeader>
-
-            <CardContent>
-
-              <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-950/40">
-                <img
-                  src={env.assetsUrl + s.screenshotUrl}
-                  alt="Strat screenshot"
-                  className="block w-full"
-                />
-              </div>
-
-            </CardContent>
-
-          </Card>
         ) : null}
-
       </div>
 
+      <section className="rounded-2xl border border-border bg-surface p-5">
+        <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Notes</p>
+        <p className="mt-3 text-sm leading-relaxed text-pretty whitespace-pre-wrap">
+          {s.notes?.trim() || "No notes for this strat."}
+        </p>
+      </section>
     </div>
   );
 }

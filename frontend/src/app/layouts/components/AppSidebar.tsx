@@ -1,53 +1,64 @@
-import { NavLink } from "react-router-dom";
-import { Separator } from "@/components/ui/separator";
+import { NavLink, useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import {
+  LayoutDashboard,
+  Swords,
+  Map,
+  Users,
+  Settings,
+} from "lucide-react";
 
-type Item = { to: string; label: string };
+const navItems = [
+  { to: "/app", label: "Overview", icon: LayoutDashboard, end: true },
+  { to: "/app/scrims", label: "Scrims", icon: Swords },
+  { to: "/app/strats", label: "Strats", icon: Map },
+  { to: "/app/team", label: "Roster", icon: Users },
+  { to: "/app/settings", label: "Settings", icon: Settings },
+] as const;
 
-const navItems: Item[] = [
-  { to: "/app", label: "Dashboard" },
-  { to: "/app/scrims", label: "Scrims" },
-  { to: "/app/strats", label: "Strats" },
-  { to: "/app/team", label: "Team" },
-  { to: "/app/settings", label: "Settings" },
-];
+export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
+  const navigate = useNavigate();
 
-function SideLink({ to, label }: Item) {
   return (
-    <NavLink
-      to={to}
-      className={({ isActive }) =>
-        [
-          "block rounded-md px-3 py-2 text-sm transition",
-          "text-slate-200 hover:bg-slate-800 hover:text-slate-100",
-          isActive ? "bg-slate-800 text-slate-100" : "",
-        ].join(" ")
-      }
-    >
-      {label}
-    </NavLink>
-  );
-}
+    <aside className="flex h-full w-56 flex-col bg-sidebar text-sidebar-foreground">
+      <button
+        type="button"
+        onClick={() => {
+          navigate("/app");
+          onNavigate?.();
+        }}
+        className="flex items-center gap-2.5 px-5 py-5 text-left"
+      >
+        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-ink text-[11px] font-bold text-signal">
+          SB
+        </span>
+        <span className="font-display text-sm font-semibold tracking-tight">Scrimbase</span>
+      </button>
 
-export function AppSidebar() {
-  return (
-    <aside className="h-full w-64 border-r border-slate-800 bg-slate-900">
-      <div className="px-4 py-4">
-        <div className="text-sm font-semibold tracking-tight text-slate-100">
-          Scrimbase
-        </div>
-        <div className="text-xs text-slate-400">Team workspace</div>
-      </div>
-
-      <Separator className="bg-slate-800" />
-
-      <nav className="px-2 py-3 space-y-1">
-        {navItems.map((it) => (
-          <SideLink key={it.to} {...it} />
+      <nav className="flex flex-1 flex-col gap-0.5 px-3 pb-4">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            end={"end" in item ? item.end : false}
+            onClick={onNavigate}
+            className={({ isActive }) =>
+              cn(
+                "group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors",
+                isActive
+                  ? "bg-sidebar-accent font-medium text-foreground"
+                  : "text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground",
+              )
+            }
+          >
+            <item.icon className="h-4 w-4 opacity-70" strokeWidth={1.75} />
+            {item.label}
+          </NavLink>
         ))}
       </nav>
 
-      <div className="mt-auto px-4 py-4 text-xs text-slate-500">
-        v0.1
+      <div className="border-t border-sidebar-border px-5 py-4">
+        <p className="text-[11px] text-muted-foreground tracking-wide">Team workspace</p>
       </div>
     </aside>
   );

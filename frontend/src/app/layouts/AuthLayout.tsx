@@ -1,23 +1,59 @@
-import { Outlet } from "react-router-dom";
-import { MarketingNavbar } from "@/shared/ui/components/MarketingNavbar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Link, Outlet, useLocation } from "react-router-dom";
 
 export function AuthLayout() {
+  const location = useLocation();
+  const isLogin = location.pathname.includes("login");
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <MarketingNavbar />
-      <main className="mx-auto flex min-h-[calc(100vh-56px)] max-w-6xl items-center justify-center px-4 py-10">
-        <div className="w-full max-w-md">
-          <Card className="border-slate-800 bg-slate-900/40">
-            <CardHeader>
-              <CardTitle className="text-slate-200">Scrimbase</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Outlet />
-            </CardContent>
-          </Card>
+    <div className="min-h-screen grid lg:grid-cols-2">
+      <div className="relative hidden lg:flex flex-col justify-between bg-ink text-white p-10 overflow-hidden">
+        <div className="scrim-grid absolute inset-0 opacity-40" />
+        <Link to="/" className="relative font-display text-sm font-semibold tracking-tight">
+          Scrimbase
+        </Link>
+        <div className="relative space-y-4 max-w-md animate-rise">
+          <p className="font-display text-4xl font-semibold tracking-tight text-balance leading-[1.1]">
+            Log scrims.
+            <br />
+            Find the pattern.
+          </p>
+          <p className="text-sm text-white/55 leading-relaxed">
+            Built for competitive Valorant teams that treat practice like product.
+          </p>
         </div>
-      </main>
+        <p className="relative text-xs text-white/35">Team workspace · AI scoreboard capture</p>
+      </div>
+
+      <div className="flex flex-col bg-background">
+        <div className="flex items-center justify-between px-6 py-5 lg:justify-end">
+          <Link to="/" className="font-display text-sm font-semibold lg:hidden">
+            Scrimbase
+          </Link>
+          <p className="text-sm text-muted-foreground">
+            {isLogin ? (
+              <>
+                New here?{" "}
+                <Link to="/register" className="font-medium text-foreground underline-offset-4 hover:underline">
+                  Create account
+                </Link>
+              </>
+            ) : (
+              <>
+                Have an account?{" "}
+                <Link to="/login" className="font-medium text-foreground underline-offset-4 hover:underline">
+                  Log in
+                </Link>
+              </>
+            )}
+          </p>
+        </div>
+
+        <main className="flex flex-1 items-center justify-center px-6 pb-16">
+          <div className="w-full max-w-sm animate-rise">
+            <Outlet />
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

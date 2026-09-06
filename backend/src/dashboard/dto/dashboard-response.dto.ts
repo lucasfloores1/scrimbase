@@ -1,6 +1,7 @@
 import { Exclude, Expose, Type } from "class-transformer";
 import { ScrimOutcome } from "src/scrims/enums/scrim-outcome.enum";
 import { ScrimType } from "src/scrims/enums/scrim-type.enum";
+import { ValorantMap } from "src/common/enums/valorant-map.enum";
 
 @Exclude()
 export class DashboardTeamDto {
@@ -92,7 +93,7 @@ export class DashboardRecentScrimDto {
   type: ScrimType;
 
   @Expose()
-  map: string;
+  map: ValorantMap;
 
   @Expose()
   outcome: ScrimOutcome;

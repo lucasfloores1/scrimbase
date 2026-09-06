@@ -1,3 +1,5 @@
+import type { ValorantAgentOrUnknown, ValorantMap } from "@/shared/constants/valorant";
+
 export interface LoginDto {
   email: string;
   password: string;
@@ -70,7 +72,7 @@ export interface DashboardBestMapDto {
 export interface DashboardRecentScrimDto {
   id: string;
   createdAt: string;
-  map: string;
+  map: ValorantMap;
   type: string;
   outcome: ScrimOutcome;
   teamRounds: number;
@@ -90,10 +92,10 @@ export interface DashboardResponseDto {
 export type ScrimType = "SCRIM" | "TOURNAMENT" | "PREMIER";
 
 export interface ScrimPlayerStatDto {
-  userId?: string;       
-  displayName?: string;  
+  userId?: string;
+  displayName?: string;
 
-  agent: string;
+  agent: ValorantAgentOrUnknown;
   kills: number;
   deaths: number;
   assists: number;
@@ -102,22 +104,26 @@ export interface ScrimPlayerStatDto {
 
 export interface CreateScrimDto {
   type: ScrimType;
-  map: string;
+  map: ValorantMap;
+  opponentName: string;
   teamRounds: number;
   enemyRounds: number;
-  teamStats: ScrimPlayerStatDto[];      
-  enemyComposition: string[];           
+  teamStats: ScrimPlayerStatDto[];
+  enemyComposition: ValorantAgentOrUnknown[];
 }
 
 export interface ParseScrimScreenshotRequestDto {
   type: ScrimType;
-  map: string;
+  map: ValorantMap;
 }
 
 export interface ParseScrimScreenshotResponseDto {
   rawOutputId: string;
   warnings?: string[];
-  draft: CreateScrimDto & { outcome: ScrimOutcome };
+  draft: Omit<CreateScrimDto, "opponentName"> & {
+    opponentName?: string;
+    outcome: ScrimOutcome;
+  };
 }
 
 export interface ScrimDto {
@@ -126,7 +132,8 @@ export interface ScrimDto {
   createdBy: string;
 
   type: ScrimType;
-  map: string;
+  map: ValorantMap;
+  opponentName: string;
 
   teamRounds: number;
   enemyRounds: number;
@@ -137,17 +144,31 @@ export interface ScrimDto {
   teamStats: Array<{
     userId?: string;
     displayName?: string;
-    agent: string;
+    agent: ValorantAgentOrUnknown;
     kills: number;
     deaths: number;
     assists: number;
     acs: number;
   }>;
 
-  enemyComposition: string[];
+  enemyComposition: ValorantAgentOrUnknown[];
 
   createdAt?: string;
   updatedAt?: string;
+}
+
+/** Query params for GET /teams/:teamId/scrims */
+export interface ListScrimsQuery {
+  map?: ValorantMap;
+  type?: ScrimType;
+  outcome?: ScrimOutcome;
+  opponentName?: string;
+  agents?: ValorantAgentOrUnknown[];
+  exactComposition?: boolean;
+  playerId?: string;
+  limit?: number;
+  from?: string;
+  to?: string;
 }
 
 // ---------- Users (PUT /users/me) ----------
@@ -165,8 +186,8 @@ export interface StratDto {
   teamId: string;
   createdBy: string;
   name: string;
-  map: string;
-  side: "ATTACK" | "DEFENSE";
+  map: ValorantMap;
+  side?: "ATTACK" | "DEFENSE";
   notes?: string;
   screenshotUrl: string;
   createdAt?: string;
@@ -176,6 +197,6 @@ export interface StratDto {
 export interface CreateStratDto {
   name: string;
   notes?: string;
-  map: string;
+  map: ValorantMap;
   side: "ATTACK" | "DEFENSE";
 }

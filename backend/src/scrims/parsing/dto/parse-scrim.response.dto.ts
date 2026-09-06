@@ -2,6 +2,8 @@ import { Exclude, Expose, Type } from "class-transformer";
 import { ScrimOutcome } from "../../enums/scrim-outcome.enum";
 import { ScrimType } from "../../enums/scrim-type.enum";
 import { ScrimPlayerStatResponseDto } from "../../dto/scrim.response.dto";
+import { ValorantMap } from "src/common/enums/valorant-map.enum";
+import { ValorantAgent } from "src/common/enums/valorant-agent.enum";
 
 /**
  * Draft payload returned by parse-screenshot.
@@ -14,7 +16,11 @@ export class DraftScrimResponseDto {
   type: ScrimType;
 
   @Expose()
-  map: string;
+  map: ValorantMap;
+
+  /** Filled by the user on review — AI draft may omit it. */
+  @Expose()
+  opponentName?: string;
 
   @Expose()
   teamRounds: number;
@@ -26,7 +32,7 @@ export class DraftScrimResponseDto {
   outcome: ScrimOutcome;
 
   @Expose()
-  enemyComposition: string[];
+  enemyComposition: ValorantAgent[];
 
   @Expose()
   @Type(() => ScrimPlayerStatResponseDto)

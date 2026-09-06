@@ -1,5 +1,7 @@
 import { Exclude, Expose, Transform, Type } from "class-transformer";
 import { toIdString, toIsoDate, toRefId } from "src/common/utils/serialize.utils";
+import { ValorantMap } from "src/common/enums/valorant-map.enum";
+import { ValorantAgent } from "src/common/enums/valorant-agent.enum";
 
 @Exclude()
 export class ScrimPlayerStatResponseDto {
@@ -11,7 +13,7 @@ export class ScrimPlayerStatResponseDto {
   displayName?: string;
 
   @Expose()
-  agent: string;
+  agent: ValorantAgent;
 
   @Expose()
   kills: number;
@@ -44,7 +46,10 @@ export class ScrimResponseDto {
   type: string;
 
   @Expose()
-  map: string;
+  map: ValorantMap;
+
+  @Expose()
+  opponentName: string;
 
   @Expose()
   teamRounds: number;
@@ -59,7 +64,7 @@ export class ScrimResponseDto {
   screenshotUrl: string;
 
   @Expose()
-  enemyComposition: string[];
+  enemyComposition: ValorantAgent[];
 
   @Expose()
   @Type(() => ScrimPlayerStatResponseDto)

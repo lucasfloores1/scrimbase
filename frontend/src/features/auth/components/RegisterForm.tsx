@@ -1,26 +1,25 @@
 import * as React from "react";
-import { Link } from "react-router-dom";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
 import { useRegister } from "@/features/auth/hooks/useRegister";
 
 function errorToMessage(err: unknown): string {
   if (!err) return "";
   if (err instanceof Error) return err.message;
-  return "No se pudo crear la cuenta.";
+  return "Could not create account.";
 }
 
 function looksLikeRiotId(value: string) {
-  // backend validates "gameUsername#TAG"
-  return value.includes("#") && value.split("#")[0].trim().length > 0 && value.split("#")[1].trim().length > 0;
+  return (
+    value.includes("#") &&
+    value.split("#")[0].trim().length > 0 &&
+    value.split("#")[1].trim().length > 0
+  );
 }
 
 export function RegisterForm() {
   const { register, isPending, error } = useRegister();
-
   const [email, setEmail] = React.useState("");
   const [username, setUsername] = React.useState("");
   const [riotId, setRiotId] = React.useState("");
@@ -36,7 +35,6 @@ export function RegisterForm() {
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
-
     register({
       email: email.trim(),
       username: username.trim(),
@@ -47,90 +45,69 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <div className="space-y-1">
-        <h1 className="text-lg font-semibold text-slate-100">Crear cuenta</h1>
-        <p className="text-sm text-slate-400">
-          Configurá tu perfil para empezar en Scrimbase.
-        </p>
+      <div className="space-y-1.5">
+        <h1 className="font-display text-2xl font-semibold tracking-tight">Create account</h1>
+        <p className="text-sm text-muted-foreground">Set up your player profile to join a team.</p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-slate-200">
-          Email
-        </Label>
+        <Label htmlFor="email">Email</Label>
         <Input
           id="email"
           type="email"
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="border-slate-800 bg-slate-950/40 text-slate-100 placeholder:text-slate-500"
-          placeholder="tu@email.com"
+          className="bg-surface h-10"
+          placeholder="you@team.com"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="username" className="text-slate-200">
-          Nombre de usuario
-        </Label>
+        <Label htmlFor="username">Username</Label>
         <Input
           id="username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="border-slate-800 bg-slate-950/40 text-slate-100 placeholder:text-slate-500"
-          placeholder="Tu nombre público"
+          className="bg-surface h-10"
+          placeholder="Public name"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="riotId" className="text-slate-200">
-          Riot ID
-        </Label>
+        <Label htmlFor="riotId">Riot ID</Label>
         <Input
           id="riotId"
           value={riotId}
           onChange={(e) => setRiotId(e.target.value)}
-          className="border-slate-800 bg-slate-950/40 text-slate-100 placeholder:text-slate-500"
-          placeholder="MiNick#TAG"
+          className="bg-surface h-10"
+          placeholder="Name#TAG"
         />
-        <p className="text-xs text-slate-500">Formato requerido: gameUsername#TAG</p>
+        <p className="text-xs text-muted-foreground">Required format: gameUsername#TAG</p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password" className="text-slate-200">
-          Contraseña
-        </Label>
+        <Label htmlFor="password">Password</Label>
         <Input
           id="password"
           type="password"
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="border-slate-800 bg-slate-950/40 text-slate-100 placeholder:text-slate-500"
-          placeholder="Mínimo 6 caracteres"
+          className="bg-surface h-10"
+          placeholder="At least 6 characters"
         />
       </div>
 
       {error ? (
-        <div className="rounded-md border border-red-700/30 bg-red-600/10 px-3 py-2 text-sm text-red-200">
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {errorToMessage(error)}
         </div>
       ) : null}
 
-      <Button
-        type="submit"
-        disabled={!canSubmit}
-        className="w-full bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-60"
-      >
-        {isPending ? "Creando cuenta..." : "Crear cuenta"}
+      <Button type="submit" disabled={!canSubmit} className="w-full h-10">
+        {isPending ? "Creating…" : "Create account"}
       </Button>
-
-      <p className="text-sm text-slate-400">
-        ¿Ya tenés cuenta?{" "}
-        <Link className="text-blue-300 hover:text-blue-200" to="/login">
-          Iniciar sesión
-        </Link>
-      </p>
     </form>
   );
 }

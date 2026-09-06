@@ -13,6 +13,9 @@ import { ParseScrimScreenshotResponseDto } from "./dto/parse-scrim.response.dto"
 import { ScrimParseAttempt, ScrimParseAttemptStatus } from "./schemas/scrim-parse-attempt.schema";
 import { LlmScrimExtractionDto } from "./dto/llm-scrim-extraction.dto";
 import { TeamMemberService } from "src/teams/team-member.service";
+import { canonicalizeAgentName } from "src/common/utils/valorant-agent.utils";
+import { ValorantMap } from "src/common/enums/valorant-map.enum";
+import { ValorantAgent } from "src/common/enums/valorant-agent.enum";
 
 @Injectable()
 export class ScrimScreenshotParserService {
@@ -29,7 +32,7 @@ export class ScrimScreenshotParserService {
     userId: string;
     file: Express.Multer.File;
     type: ScrimType;
-    map: string;
+    map: ValorantMap;
   }): Promise<ParseScrimScreenshotResponseDto> {
     const { type, map, teamId, userId, file } = args;
 
@@ -136,7 +139,7 @@ export class ScrimScreenshotParserService {
     const matchedTeamStats = matchResult.teamStats.map((p) => ({
       userId: p.userId ?? undefined,
       displayName: p.displayName,
-      agent: p.agent,
+      agent: canonicalizeAgentName(p.agent),
       kills: p.kills,
       deaths: p.deaths,
       assists: p.assists,
@@ -199,6 +202,7 @@ Extract ONLY valid JSON with this schema:
 Rules:
 - Exactly 5 players per team.
 - Agent MUST be taken ONLY from the portrait icon at the left of each row.
+- Prefer these exact agent names: Astra, Breach, Brimstone, Chamber, Clove, Cypher, Deadlock, Fade, Gekko, Harbor, Iso, Jett, KAY/O, Killjoy, Miks, Neon, Omen, Phoenix, Raze, Reyna, Sage, Skye, Sova, Tejo, Veto, Viper, Vyse, Waylay, Yoru.
 - NEVER guess agents. If unsure, write "UNKNOWN".
 - Return ONLY valid JSON. No markdown. No extra text.
 `;
@@ -228,8 +232,8 @@ Rules:
   private async saveAttempt(args: {
     teamId: string;
     userId: string;
-    type: string;
-    map: string;
+    type: ScrimType;
+    map: ValorantMap;
     status: ScrimParseAttemptStatus;
     provider: string;
     model: string;
@@ -251,19 +255,8 @@ Rules:
     });
   }
 
-  private buildEnemyComposition(enemyStats: { agent: string }[]): string[] {
-    return enemyStats.map((p) => this.canonicalizeAgentName(p.agent));
-  }
-
-  private canonicalizeAgentName(agent: string): string {
-    const a = (agent ?? "").trim();
-    const upper = a.toUpperCase();
-
-    if (upper === "KAYO" || upper === "KAY-O") return "KAY/O";
-    if (upper === "KILL JOY") return "Killjoy";
-    if (upper === "UNKNOWN") return "UNKNOWN";
-
-    return a.length ? a[0].toUpperCase() + a.slice(1) : "UNKNOWN";
+  private buildEnemyComposition(enemyStats: { agent: string }[]): ValorantAgent[] {
+    return enemyStats.map((p) => canonicalizeAgentName(p.agent));
   }
 
   /**
