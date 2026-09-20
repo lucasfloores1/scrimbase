@@ -1,0 +1,25 @@
+import { http } from "@/shared/api/http";
+import type { CreateStratDto, StratDto } from "@/shared/types/dto";
+
+export const stratsApi = {
+  async list(teamId: string): Promise<StratDto[]> {
+    const { data } = await http.get<StratDto[]>(`/teams/${teamId}/strats`);
+    return data;
+  },
+
+  async getOne(teamId: string, stratId: string): Promise<StratDto> {
+    const { data } = await http.get<StratDto>(`/teams/${teamId}/strats/${stratId}`);
+    return data;
+  },
+
+  async create(teamId: string, file: File, dto: CreateStratDto): Promise<StratDto> {
+    const fd = new FormData();
+    fd.append("screenshot", file);
+    fd.append("name", dto.name);
+    fd.append("map", dto.map);
+    fd.append("side", dto.side);
+    if (dto.notes) fd.append("notes", dto.notes);
+    const { data } = await http.post<StratDto>(`/teams/${teamId}/strats`, fd);
+    return data;
+  },
+};
