@@ -11,6 +11,8 @@ import {
   DashboardBestMapDto,
   DashboardResponseDto,
 } from "./dto/dashboard-response.dto";
+import { TeamPlanService } from "src/teams/team-plan.service";
+import { TeamPlan } from "src/teams/enums/team-plan.enum";
 
 type DashboardAggregationResult = {
   overview: Array<{
@@ -62,6 +64,7 @@ export class DashboardService {
   constructor(
     @InjectModel(Scrim.name) private readonly scrimModel: Model<Scrim>,
     @InjectModel(Team.name) private readonly teamModel: Model<Team>,
+    private readonly teamPlanService: TeamPlanService,
     @Inject(WINSTON_MODULE_NEST_PROVIDER) private readonly logger: LoggerService,
   ) {}
 
@@ -240,12 +243,18 @@ export class DashboardService {
         }
       : null;
 
+    const planView = teamDoc ? await this.teamPlanService.buildPlanView(teamDoc as Team) : null;
+
     return {
       team: teamDoc
         ? {
             id: String(teamDoc._id),
             name: teamDoc.name,
             tag: teamDoc.tag,
+            plan: planView?.plan ?? TeamPlan.FREE,
+            isPro: planView?.isPro ?? false,
+            billingOwnerUserId: planView?.billingOwnerUserId,
+            parseQuota: planView?.parseQuota,
           }
         : null,
       overview: {

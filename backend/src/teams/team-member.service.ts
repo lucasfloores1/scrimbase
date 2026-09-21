@@ -3,12 +3,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
 import { TeamMember, TeamMemberDocument, TeamRole } from './schemas/team-member.schema';
+import { TeamPlanService } from './team-plan.service';
+import { getBillingOwnerUserId } from './team-plan.utils';
 
 @Injectable()
 export class TeamMemberService {
     constructor(
         @InjectModel(TeamMember.name)
         private readonly teamMemberModel: Model<TeamMemberDocument>,
+        private readonly teamPlanService: TeamPlanService,
     ) {}
 
     async getUserMembership(userId: string) {
@@ -91,6 +94,8 @@ export class TeamMemberService {
     }
 
     async removeMember(userId: string, teamId: string) {
+        await this.teamPlanService.assertCanRemoveMember(teamId, userId);
+
         const admins = await this.countAdmins(teamId);
         const isAdmin = await this.isAdmin(userId, teamId);
 
@@ -130,6 +135,8 @@ export class TeamMemberService {
         }
 
         if (target.isAdmin && !isAdmin) {
+            await this.teamPlanService.assertCanDemoteAdmin(teamId, targetUserId);
+
             const admins = await this.countAdmins(teamId);
             if (admins <= 1) {
                 throw new BadRequestException('Team must have at least one admin');
@@ -190,6 +197,11 @@ export class TeamMemberService {
         await target.save();
         actor.isAdmin = false;
         await actor.save();
+
+        const team = await this.teamPlanService.getTeamOrThrow(teamId);
+        if (!getBillingOwnerUserId(team) || getBillingOwnerUserId(team) === actorUserId) {
+            await this.teamPlanService.transferBillingOwner(teamId, targetUserId);
+        }
 
         return null;
     }

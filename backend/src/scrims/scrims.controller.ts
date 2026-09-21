@@ -8,6 +8,7 @@ import { ComputeScrimResultPipe } from "./pipes/compute-scrim-result.pipe";
 import { ParseScrimMultipartPipe } from "./pipes/parse-scrim-multipart.pipe";
 import { ParseScrimScreenshotRequestDto } from "./parsing/dto/parse-scrim-screenshot-request.dto";
 import { TeamFullGuard } from "src/teams/guards/team-full.guard";
+import { TeamParseQuotaGuard } from "src/teams/guards/team-parse-quota.guard";
 import { scrimParseMulterOptions } from "./upload/scrim-parse-upload.config";
 import { ScrimScreenshotParserService } from "./parsing/scrim-screenshot-parser.service";
 import { Serialize } from "src/common/decorators/serialize.decorator";
@@ -61,7 +62,7 @@ export class ScrimsController {
     }
 
     @Post("parse-screenshot")
-    @UseGuards(TeamFullGuard)
+    @UseGuards(TeamFullGuard, TeamParseQuotaGuard)
     @Serialize(ParseScrimScreenshotResponseDto)
     @UseInterceptors(FileInterceptor("screenshot", scrimParseMulterOptions))
     async parseScreenshot(

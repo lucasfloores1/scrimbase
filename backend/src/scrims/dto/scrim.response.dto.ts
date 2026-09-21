@@ -2,6 +2,7 @@ import { Exclude, Expose, Transform, Type } from "class-transformer";
 import { toIdString, toIsoDate, toRefId } from "src/common/utils/serialize.utils";
 import { ValorantMap } from "src/common/enums/valorant-map.enum";
 import { ValorantAgent } from "src/common/enums/valorant-agent.enum";
+import { ScrimPlayerKind } from "../enums/scrim-player-kind.enum";
 
 @Exclude()
 export class ScrimPlayerStatResponseDto {
@@ -11,6 +12,10 @@ export class ScrimPlayerStatResponseDto {
 
   @Expose()
   displayName?: string;
+
+  @Expose()
+  @Transform(({ obj }) => obj.kind ?? (obj.userId ? ScrimPlayerKind.MEMBER : ScrimPlayerKind.SUB))
+  kind: ScrimPlayerKind;
 
   @Expose()
   agent: ValorantAgent;

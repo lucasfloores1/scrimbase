@@ -1,18 +1,25 @@
 import { Expose } from "class-transformer";
-import { IsEnum, IsInt, IsMongoId, IsNotEmpty, IsString, Min, ValidateIf } from "class-validator";
+import { IsEnum, IsInt, IsMongoId, IsNotEmpty, IsOptional, IsString, Min, ValidateIf } from "class-validator";
 import { ValorantAgent } from "src/common/enums/valorant-agent.enum";
+import { ScrimPlayerKind } from "../enums/scrim-player-kind.enum";
 
 export class ScrimPlayerStatDto {
   @Expose()
-  @ValidateIf((o) => !o.displayName)
+  @ValidateIf((o) => o.kind !== ScrimPlayerKind.SUB && !o.displayName)
   @IsMongoId()
-  userId: string;
+  userId?: string;
 
   @Expose()
-  @ValidateIf((o) => !o.userId)
+  @ValidateIf((o) => o.kind === ScrimPlayerKind.SUB || !o.userId)
   @IsString()
   @IsNotEmpty()
-  displayName: string;
+  displayName?: string;
+
+  /** Omit to infer: userId => MEMBER, displayName only => SUB. */
+  @Expose()
+  @IsOptional()
+  @IsEnum(ScrimPlayerKind)
+  kind?: ScrimPlayerKind;
 
   @Expose()
   @IsEnum(ValorantAgent)

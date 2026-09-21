@@ -22,11 +22,13 @@ export class TeamsService {
 
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
+                const ownerId = new Types.ObjectId(userId);
                 const team = await this.teamModel.create({
                     name: dto.name,
                     tag: dto.tag,
-                    createdBy: new Types.ObjectId(userId),
+                    createdBy: ownerId,
                     inviteCode: generateInviteCode(),
+                    billingOwnerUserId: ownerId,
                 });
 
                 await this.teamMemberService.createOwner(userId, team._id.toString());

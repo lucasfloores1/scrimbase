@@ -54,7 +54,11 @@ export class ApiExceptionFilter implements ExceptionFilter {
       message,
       ...(details ? { details } : {}),
       ...(body.error ? { error: body.error } : {}),
+      ...(body.code ? { code: body.code } : {}),
       ...(body.rawOutputId ? { rawOutputId: body.rawOutputId } : {}),
+      ...(body.resetsAt ? { resetsAt: body.resetsAt } : {}),
+      ...(body.limit != null ? { limit: body.limit } : {}),
+      ...(body.used != null ? { used: body.used } : {}),
     };
   }
 

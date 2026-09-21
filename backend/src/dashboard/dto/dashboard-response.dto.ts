@@ -2,6 +2,8 @@ import { Exclude, Expose, Type } from "class-transformer";
 import { ScrimOutcome } from "src/scrims/enums/scrim-outcome.enum";
 import { ScrimType } from "src/scrims/enums/scrim-type.enum";
 import { ValorantMap } from "src/common/enums/valorant-map.enum";
+import { TeamPlan } from "src/teams/enums/team-plan.enum";
+import { ParseQuotaResponseDto } from "src/teams/dto/parse-quota.response.dto";
 
 @Exclude()
 export class DashboardTeamDto {
@@ -13,6 +15,19 @@ export class DashboardTeamDto {
 
   @Expose()
   tag: string;
+
+  @Expose()
+  plan: TeamPlan;
+
+  @Expose()
+  isPro: boolean;
+
+  @Expose()
+  billingOwnerUserId?: string;
+
+  @Expose()
+  @Type(() => ParseQuotaResponseDto)
+  parseQuota?: ParseQuotaResponseDto;
 }
 
 @Exclude()

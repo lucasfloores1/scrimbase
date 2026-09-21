@@ -16,6 +16,7 @@ import { TeamMemberService } from "src/teams/team-member.service";
 import { canonicalizeAgentName } from "src/common/utils/valorant-agent.utils";
 import { ValorantMap } from "src/common/enums/valorant-map.enum";
 import { ValorantAgent } from "src/common/enums/valorant-agent.enum";
+import { ScrimPlayerKind } from "../enums/scrim-player-kind.enum";
 
 @Injectable()
 export class ScrimScreenshotParserService {
@@ -139,6 +140,8 @@ export class ScrimScreenshotParserService {
     const matchedTeamStats = matchResult.teamStats.map((p) => ({
       userId: p.userId ?? undefined,
       displayName: p.displayName,
+      kind: p.kind,
+      matched: p.matched,
       agent: canonicalizeAgentName(p.agent),
       kills: p.kills,
       deaths: p.deaths,
@@ -168,8 +171,12 @@ export class ScrimScreenshotParserService {
     if (unknownTeam > 0) warnings.push(`Team agents include UNKNOWN (${unknownTeam}/5). Please verify.`);
 
     // warnings: unknown player mapping
-    const unknownPlayers = matchedTeamStats.filter((p) => p.displayName === "UNKNOWN" && !p.userId).length;
-    if (unknownPlayers > 0) warnings.push(`Some team players could not be matched (${unknownPlayers}/5). Please assign.`);
+    const unknownPlayers = matchedTeamStats.filter((p) => !p.matched).length;
+    if (unknownPlayers > 0) {
+      warnings.push(
+        `${unknownPlayers}/5 team player(s) could not be matched. Assign a roster player, save as SUB (max 3), or omit the row to exclude.`,
+      );
+    }
 
     return {
       rawOutputId: attempt._id.toString(),
@@ -318,17 +325,20 @@ Rules:
         return {
           ...stat,
           userId: best.userId,
-          // ✅ always show MAIN riotId, even if match was by alt
           displayName: best.riotId ?? original,
+          kind: ScrimPlayerKind.MEMBER,
+          matched: true,
         };
       }
 
-      warnings.push(`No team member match for "${original}" -> UNKNOWN (expected riotName match after "|").`);
+      warnings.push(`No team member match for "${original || "UNKNOWN"}". Save as SUB, assign a roster player, or omit to exclude.`);
 
       return {
         ...stat,
         userId: undefined,
-        displayName: "UNKNOWN",
+        displayName: original || "UNKNOWN",
+        kind: ScrimPlayerKind.SUB,
+        matched: false,
       };
     });
 

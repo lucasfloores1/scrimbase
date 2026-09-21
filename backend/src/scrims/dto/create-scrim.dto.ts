@@ -15,6 +15,7 @@ import { Expose, Type } from "class-transformer";
 import { ScrimPlayerStatDto } from "./scrim-player-stat.dto";
 import { ValorantMap } from "src/common/enums/valorant-map.enum";
 import { ValorantAgent } from "src/common/enums/valorant-agent.enum";
+import { MAX_SCRIM_TEAM_STATS, MIN_SCRIM_TEAM_STATS } from "../enums/scrim-player-kind.enum";
 
 export class CreateScrimDto {
   @Expose()
@@ -44,8 +45,8 @@ export class CreateScrimDto {
 
   @Expose()
   @IsArray()
-  @ArrayMinSize(5)
-  @ArrayMaxSize(5)
+  @ArrayMinSize(MIN_SCRIM_TEAM_STATS)
+  @ArrayMaxSize(MAX_SCRIM_TEAM_STATS)
   @ValidateNested({ each: true })
   @Type(() => ScrimPlayerStatDto)
   teamStats: ScrimPlayerStatDto[];

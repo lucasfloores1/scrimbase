@@ -9,6 +9,7 @@ import { TeamMemberService } from 'src/teams/team-member.service';
 import { ListScrimsQueryDto } from './dto/list-scrims-query.dto';
 import { ValorantMap } from 'src/common/enums/valorant-map.enum';
 import { ValorantAgent } from 'src/common/enums/valorant-agent.enum';
+import { MAX_SCRIM_SUBS, MAX_SCRIM_TEAM_STATS, MIN_SCRIM_TEAM_STATS, ScrimPlayerKind } from './enums/scrim-player-kind.enum';
 
 type CreateScrimPayload = {
     type: ScrimType;
@@ -20,6 +21,7 @@ type CreateScrimPayload = {
     teamStats: {
         userId?: string;
         displayName?: string;
+        kind?: ScrimPlayerKind;
         agent: ValorantAgent;
         kills: number;
         deaths: number;
@@ -43,9 +45,42 @@ export class ScrimsService {
             'ScrimsService',
         );
 
-        const memberIds = payload.teamStats
+        if (payload.teamStats.length < MIN_SCRIM_TEAM_STATS || payload.teamStats.length > MAX_SCRIM_TEAM_STATS) {
+            throw new BadRequestException(
+                `teamStats must contain ${MIN_SCRIM_TEAM_STATS} to ${MAX_SCRIM_TEAM_STATS} players`,
+            );
+        }
+
+        const normalizedStats = payload.teamStats.map((p) => {
+            const kind = p.kind ?? (p.userId ? ScrimPlayerKind.MEMBER : ScrimPlayerKind.SUB);
+
+            if (kind === ScrimPlayerKind.MEMBER && !p.userId) {
+                throw new BadRequestException('MEMBER teamStats require a userId');
+            }
+
+            if (kind === ScrimPlayerKind.SUB && p.userId) {
+                throw new BadRequestException('SUB teamStats cannot include a userId');
+            }
+
+            if (kind === ScrimPlayerKind.SUB && !p.displayName?.trim()) {
+                throw new BadRequestException('SUB teamStats require a displayName');
+            }
+
+            return { ...p, kind };
+        });
+
+        const subCount = normalizedStats.filter((p) => p.kind === ScrimPlayerKind.SUB).length;
+        if (subCount > MAX_SCRIM_SUBS) {
+            throw new BadRequestException(`A scrim can include at most ${MAX_SCRIM_SUBS} SUB players`);
+        }
+
+        const memberIds = normalizedStats
             .map((p) => p.userId)
             .filter((id): id is string => typeof id === 'string' && id.length > 0);
+
+        if (new Set(memberIds).size !== memberIds.length) {
+            throw new BadRequestException('Duplicate teamStats userId');
+        }
 
         const ok = await this.teamMemberService.areUsersMembersOfTeam(teamId, memberIds);
 
@@ -57,9 +92,9 @@ export class ScrimsService {
             ...payload,
             opponentName: payload.opponentName.trim(),
             screenshotUrl,
-            teamStats: payload.teamStats.map((p) => ({
+            teamStats: normalizedStats.map((p) => ({
                 ...p,
-                userId: p.userId ? new Types.ObjectId(p.userId) : undefined,
+                userId: p.kind === ScrimPlayerKind.MEMBER && p.userId ? new Types.ObjectId(p.userId) : undefined,
             })),
         });
     }

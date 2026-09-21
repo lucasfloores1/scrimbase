@@ -37,3 +37,4 @@ export class ScrimParseAttempt {
 
 export const ScrimParseAttemptSchema = SchemaFactory.createForClass(ScrimParseAttempt);
 ScrimParseAttemptSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+ScrimParseAttemptSchema.index({ teamId: 1, createdAt: -1 });

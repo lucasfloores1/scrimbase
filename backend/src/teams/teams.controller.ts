@@ -7,23 +7,30 @@ import { JoinTeamByCodeDto } from './dto/join-team-by-code.dto';
 import { Serialize } from 'src/common/decorators/serialize.decorator';
 import { TeamResponseDto } from './dto/team.response.dto';
 import { TeamMemberResponseDto } from './dto/team-member.response.dto';
+import { TeamPlanService } from './team-plan.service';
 
 @Controller('teams')
 @UseGuards(JwtAuthGuard)
 export class TeamsController {
-    constructor(private readonly teamsService: TeamsService) {}
+    constructor(
+        private readonly teamsService: TeamsService,
+        private readonly teamPlanService: TeamPlanService,
+    ) {}
 
     @Post()
     @Serialize(TeamResponseDto)
     async createTeam(@Req() req, @Body() dto: CreateTeamDto) {
-        return this.teamsService.createTeam(req.user.userId, dto);
+        const team = await this.teamsService.createTeam(req.user.userId, dto);
+        return this.teamPlanService.enrichTeam(team);
     }
 
     @Get('me')
     @UseGuards(TeamMemberGuard)
     @Serialize(TeamResponseDto)
     async getMyTeam(@Req() req) {
-        return this.teamsService.getUserTeam(req.user.userId);
+        const team = await this.teamsService.getUserTeam(req.user.userId);
+        if (!team) return team;
+        return this.teamPlanService.enrichTeam(team);
     }
 
     @Post(':teamId/join')

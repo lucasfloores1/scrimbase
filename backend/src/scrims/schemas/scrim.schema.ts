@@ -4,6 +4,7 @@ import { ScrimType } from "../enums/scrim-type.enum";
 import { ScrimOutcome } from "../enums/scrim-outcome.enum";
 import { ValorantMap } from "src/common/enums/valorant-map.enum";
 import { ValorantAgent } from "src/common/enums/valorant-agent.enum";
+import { ScrimPlayerKind } from "../enums/scrim-player-kind.enum";
 
 @Schema({ _id: false })
 export class ScrimPlayerStat {
@@ -12,6 +13,9 @@ export class ScrimPlayerStat {
 
   @Prop({ required: false })
   displayName?: string;
+
+  @Prop({ type: String, required: true, enum: ScrimPlayerKind, default: ScrimPlayerKind.MEMBER })
+  kind: ScrimPlayerKind;
 
   @Prop({ required: true, enum: ValorantAgent })
   agent: ValorantAgent;
