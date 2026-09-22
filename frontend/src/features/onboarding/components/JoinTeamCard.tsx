@@ -24,19 +24,19 @@ export function JoinTeamCard() {
         join({ inviteCode: inviteCode })
     }
     return (
-        <Card className="border border-slate-800 bg-slate-950/40 shadow-lg">
+        <Card className="border shadow-lg">
 
   <CardHeader className="space-y-2">
 
     <div className="flex items-center gap-2">
-      <Users className="h-5 w-5 text-blue-400" />
+      <Users className="h-5 w-5 text-brand" />
 
-      <CardTitle className="text-lg text-slate-100">
+      <CardTitle className="text-lg text-foreground">
         Unirse a un equipo
       </CardTitle>
     </div>
 
-    <CardDescription className="text-slate-400">
+    <CardDescription className="text-muted-foreground">
       Ingresá un código de invitación para acceder al equipo.
     </CardDescription>
 
@@ -47,7 +47,7 @@ export function JoinTeamCard() {
     <form onSubmit={onSubmit} className="space-y-4">
 
       <div className="space-y-2">
-        <Label htmlFor="inviteCode" className="text-slate-200">
+        <Label htmlFor="inviteCode" className="text-foreground">
           Código de invitación
         </Label>
 
@@ -57,12 +57,12 @@ export function JoinTeamCard() {
           value={inviteCode}
           onChange={(e) => setInviteCode(e.target.value)}
           placeholder="8f0XFGODBoup"
-          className="border-slate-800 bg-slate-950/40 text-slate-100 placeholder:text-slate-500"
+          className="placeholder:text-muted-foreground"
         />
       </div>
 
       {error && (
-        <div className="rounded-md border border-red-700/30 bg-red-600/10 px-3 py-2 text-sm text-red-200">
+        <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
           {errorToMessage(error)}
         </div>
       )}
@@ -70,7 +70,7 @@ export function JoinTeamCard() {
       <Button
         type="submit"
         disabled={!canSubmit}
-        className="w-full bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-60"
+        className="w-full bg-brand text-brand-foreground hover:bg-brand-hover disabled:opacity-60"
       >
         {isPending ? "Uniéndose..." : "Unirse"}
       </Button>

@@ -1,9 +1,16 @@
 import * as React from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { AlertTriangle, ImageUp, Lock, UserRound } from "lucide-react";
 
 import { useAuth } from "@/app/providers/AuthProvider";
+import { useI18n } from "@/app/providers/I18nProvider";
+import { billingQueryKey, useBilling } from "@/features/billing/hooks/useBilling";
+import { PaywallCard } from "@/features/billing/components/PaywallCard";
+import { AnalysisProgress } from "@/features/scrims/components/AnalysisProgress";
 import { scrimsApi } from "@/shared/api/scrims.api";
+import { teamsApi } from "@/shared/api/teams.api";
+import type { TeamMemberListItem } from "@/shared/types/models";
 import type {
   CreateScrimDto,
   ParseScrimScreenshotResponseDto,
@@ -18,7 +25,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectTrigger,
@@ -26,6 +32,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 const MAPS = [
   "Ascent",
@@ -40,40 +47,39 @@ const MAPS = [
   "Sunset",
 ];
 
-const TYPES: Array<{ value: ScrimType; label: string }> = [
-  { value: "SCRIM", label: "Scrim" },
-  { value: "PREMIER", label: "Premier" },
-  { value: "TOURNAMENT", label: "Torneo" },
-];
+const TYPES: ScrimType[] = ["SCRIM", "PREMIER", "TOURNAMENT"];
+
+const UNASSIGNED = "__unassigned__";
 
 function toIntSafe(v: string) {
   const n = Number(v);
-  return Number.isFinite(n) ? Math.trunc(n) : 0;
+  return Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : 0;
 }
 
-function outcomeBadge(outcome: ScrimOutcome) {
-  if (outcome === "WIN")
-    return (
-      <Badge className="bg-emerald-600/15 text-emerald-200 border-emerald-600/30" variant="outline">
-        Victoria
-      </Badge>
-    );
-  if (outcome === "LOSS")
-    return (
-      <Badge className="bg-red-600/15 text-red-200 border-red-600/30" variant="outline">
-        Derrota
-      </Badge>
-    );
-  return (
-    <Badge className="bg-slate-600/15 text-slate-200 border-slate-600/30" variant="outline">
-      Empate
-    </Badge>
-  );
-}
-
-function errorMessage(err: unknown): string {
+function errorMessage(err: unknown, fallback: string): string {
+  if (err && typeof err === "object" && "response" in err) {
+    const res = (err as { response?: { data?: { error?: { message?: string } } } }).response;
+    const message = res?.data?.error?.message;
+    if (message) return message;
+  }
   if (err instanceof Error) return err.message;
-  return "Ocurrió un error.";
+  return fallback;
+}
+
+function isQuotaError(err: unknown) {
+  if (!err || typeof err !== "object" || !("response" in err)) return false;
+  const res = (err as { response?: { status?: number; data?: { error?: { error?: string } } } }).response;
+  return res?.status === 402 || res?.data?.error?.error === "SCRIM_QUOTA_EXCEEDED";
+}
+
+function memberLabel(member: TeamMemberListItem) {
+  return member.user?.riotId || member.user?.username || member.user?.id || "—";
+}
+
+function typeKey(value: ScrimType) {
+  if (value === "PREMIER") return "type.premier" as const;
+  if (value === "TOURNAMENT") return "type.tournament" as const;
+  return "type.scrim" as const;
 }
 
 function makeEmptyDraft(type: ScrimType, map: string): CreateScrimDto {
@@ -91,25 +97,38 @@ function makeEmptyDraft(type: ScrimType, map: string): CreateScrimDto {
     map,
     teamRounds: 0,
     enemyRounds: 0,
-    teamStats: [emptyPlayer, emptyPlayer, emptyPlayer, emptyPlayer, emptyPlayer].map((p) => ({ ...p })),
+    teamStats: Array.from({ length: 5 }, () => ({ ...emptyPlayer })),
     enemyComposition: ["UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN"],
   };
 }
 
 export default function ScrimCreatePage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { t } = useI18n();
   const { user } = useAuth();
   const teamId = user?.teamMember?.teamId ?? null;
 
-  // Paso 1
+  const billing = useBilling();
+
   const [type, setType] = React.useState<ScrimType>("SCRIM");
   const [map, setMap] = React.useState<string>(MAPS[0]);
   const [file, setFile] = React.useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+  const [isDragging, setIsDragging] = React.useState(false);
 
-  // Paso 2
   const [parse, setParse] = React.useState<ParseScrimScreenshotResponseDto | null>(null);
   const [draft, setDraft] = React.useState<CreateScrimDto | null>(null);
+  const [clientError, setClientError] = React.useState<string | null>(null);
+
+  const membersQuery = useQuery({
+    queryKey: ["team-members", teamId],
+    queryFn: teamsApi.getTeamMembers,
+    enabled: !!teamId,
+    staleTime: 60_000,
+  });
+
+  const members = membersQuery.data ?? [];
 
   React.useEffect(() => {
     if (!file) {
@@ -123,171 +142,237 @@ export default function ScrimCreatePage() {
 
   const parseMutation = useMutation({
     mutationFn: async () => {
-      if (!teamId) throw new Error("No hay teamId disponible.");
-      if (!file) throw new Error("Falta la captura.");
-
+      if (!teamId) throw new Error(t("upload.needTeam"));
+      if (!file) throw new Error(t("upload.screenshot"));
       return scrimsApi.parseScreenshot(teamId, file, { type, map });
     },
     onSuccess: (res) => {
       setParse(res);
-      // draft viene exactamente como CreateScrimDto + outcome
-      console.log(res);      
       setDraft(res.draft);
     },
   });
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      if (!teamId) throw new Error("No hay teamId disponible.");
-      if (!file) throw new Error("Falta la captura.");
-      if (!draft) throw new Error("No hay datos para guardar.");
-
-      // Validación mínima del lado UI (sin reemplazar backend):
-      if (draft.teamStats.length !== 5) throw new Error("Team stats debe tener 5 jugadores.");
-      if (draft.enemyComposition.length !== 5) throw new Error("Enemy composition debe tener 5 agentes.");
-
+      if (!teamId) throw new Error(t("upload.needTeam"));
+      if (!file) throw new Error(t("upload.screenshot"));
+      if (!draft) throw new Error(t("common.error"));
       return scrimsApi.create(teamId, file, draft);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["scrims", teamId] });
+      queryClient.invalidateQueries({ queryKey: billingQueryKey(teamId) });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       navigate("/app/scrims", { replace: true });
     },
   });
 
   const step = draft ? 2 : 1;
+  const quotaBlocked = billing.status ? !billing.status.canUploadScrim : false;
+
+  function pickFile(next: File | null) {
+    setFile(next);
+    setClientError(null);
+  }
+
+  function assignPlayer(index: number, memberUserId: string | null) {
+    if (!draft) return;
+
+    const next = [...draft.teamStats];
+    const member = members.find((m) => m.user?.id === memberUserId);
+
+    next[index] = {
+      ...next[index],
+      userId: memberUserId ?? undefined,
+      displayName: member ? memberLabel(member) : "UNKNOWN",
+    };
+
+    setDraft({ ...draft, teamStats: next });
+    setClientError(null);
+  }
+
+  function updateStat(index: number, patch: Partial<ScrimPlayerStatDto>) {
+    if (!draft) return;
+    const next = [...draft.teamStats];
+    next[index] = { ...next[index], ...patch };
+    setDraft({ ...draft, teamStats: next });
+  }
+
+  function updateEnemyAgent(index: number, value: string) {
+    if (!draft) return;
+    const next = [...draft.enemyComposition];
+    next[index] = value;
+    setDraft({ ...draft, enemyComposition: next });
+  }
+
+  function save() {
+    if (!draft) return;
+
+    const unassigned = draft.teamStats.filter((p) => !p.userId).length;
+    if (unassigned > 0) {
+      setClientError(t("upload.missingPlayers", { count: unassigned }));
+      return;
+    }
+
+    const ids = draft.teamStats.map((p) => p.userId);
+    if (new Set(ids).size !== ids.length) {
+      setClientError(t("upload.duplicatePlayers"));
+      return;
+    }
+
+    setClientError(null);
+    createMutation.mutate();
+  }
 
   if (!teamId) {
     return (
       <div className="space-y-2">
-        <h1 className="text-xl font-semibold text-slate-100">Subir scrim</h1>
-        <p className="text-sm text-slate-400">Necesitás pertenecer a un equipo para subir scrims.</p>
+        <h1 className="text-xl font-semibold text-foreground">{t("upload.title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("upload.needTeam")}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <header className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-100">
-              Subir scrim
+            <h1 className="text-xl font-semibold tracking-tight text-foreground md:text-2xl">
+              {t("upload.title")}
             </h1>
-            <Badge variant="outline" className="border-slate-700 bg-slate-950 text-slate-200">
-              Paso {step} de 2
-            </Badge>
+            <Badge variant="outline">{t("upload.step", { current: step })}</Badge>
           </div>
-          <p className="text-sm text-slate-400">
-            {step === 1
-              ? "Cargá la captura y ejecutá el análisis con IA."
-              : "Revisá el draft y confirmá para guardar."}
+          <p className="text-sm text-muted-foreground">
+            {step === 1 ? t("upload.step1Desc") : t("upload.step2Desc")}
           </p>
         </div>
 
-        <div className="flex gap-2">
-          {step === 2 ? (
-            <Button
-              variant="outline"
-              className="border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-900"
-              onClick={() => {
-                setDraft(null);
-                setParse(null);
-              }}
-            >
-              Volver
-            </Button>
-          ) : null}
-
-          <Button
-            variant="outline"
-            className="border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-900"
-            onClick={() => navigate("/app/scrims")}
-          >
-            Cancelar
-          </Button>
-        </div>
+        <Button variant="outline" onClick={() => navigate("/app/scrims")}>
+          {t("common.cancel")}
+        </Button>
       </header>
 
-      <Separator className="bg-slate-800" />
+      <Separator />
+
+      {quotaBlocked && billing.status && step === 1 ? <PaywallCard status={billing.status} /> : null}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {/* Izquierda */}
-        <Card className="border-slate-800 bg-slate-950/30">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium text-slate-200">
-              {step === 1 ? "Análisis" : "Confirmación"}
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {step === 1 ? t("upload.analysis") : t("upload.confirmation")}
             </CardTitle>
           </CardHeader>
 
           <CardContent className="space-y-4">
             {step === 1 ? (
               <>
-                <div className="space-y-2">
-                  <Label className="text-slate-200">Tipo</Label>
-                  <Select value={type} onValueChange={(v) => setType(v as ScrimType)}>
-                    <SelectTrigger className="border-slate-800 bg-slate-950/40 text-slate-100">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="border-slate-800 bg-slate-950 text-slate-100">
-                      {TYPES.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>
-                          {t.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>{t("upload.typeLabel")}</Label>
+                    <Select value={type} onValueChange={(v) => setType(v as ScrimType)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TYPES.map((value) => (
+                          <SelectItem key={value} value={value}>
+                            {t(typeKey(value))}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>{t("upload.mapLabel")}</Label>
+                    <Select value={map} onValueChange={setMap}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MAPS.map((m) => (
+                          <SelectItem key={m} value={m}>
+                            {m}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-slate-200">Mapa</Label>
-                  <Select value={map} onValueChange={setMap}>
-                    <SelectTrigger className="border-slate-800 bg-slate-950/40 text-slate-100">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="border-slate-800 bg-slate-950 text-slate-100">
-                      {MAPS.map((m) => (
-                        <SelectItem key={m} value={m}>
-                          {m}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>{t("upload.screenshot")}</Label>
+
+                  <label
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragging(false);
+                      pickFile(e.dataTransfer.files?.[0] ?? null);
+                    }}
+                    className={cn(
+                      "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed px-4 py-8 text-center transition-colors",
+                      isDragging ? "border-brand bg-brand/5" : "border-border hover:bg-accent/40"
+                    )}
+                  >
+                    <ImageUp className="h-6 w-6 text-muted-foreground" />
+                    <span className="text-sm text-foreground">
+                      {file ? file.name : t("upload.dropHint")}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{t("upload.screenshotHint")}</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-slate-200">Captura</Label>
-                  <Input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="border-slate-800 bg-slate-950/40 text-slate-100 file:text-slate-200"
-                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                  />
-                  <p className="text-xs text-slate-500">
-                    El backend valida tamaño y tipo. Ideal: scoreboard o resultado.
-                  </p>
-                </div>
+                <AnalysisProgress active={parseMutation.isPending} done={!!draft} />
 
                 {parseMutation.isError ? (
-                  <div className="rounded-md border border-red-700/30 bg-red-600/10 px-3 py-2 text-sm text-red-200">
-                    {errorMessage(parseMutation.error)}
-                  </div>
+                  isQuotaError(parseMutation.error) && billing.status ? (
+                    <PaywallCard status={billing.status} />
+                  ) : (
+                    <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger-foreground">
+                      {errorMessage(parseMutation.error, t("common.error"))}
+                    </div>
+                  )
                 ) : null}
 
                 <Button
-                  className="w-full bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-60"
-                  disabled={!file || parseMutation.isPending}
+                  className="w-full bg-brand text-brand-foreground hover:bg-brand-hover disabled:opacity-60"
+                  disabled={!file || parseMutation.isPending || quotaBlocked}
                   onClick={() => parseMutation.mutate()}
                 >
-                  {parseMutation.isPending ? "Analizando..." : "Analizar captura"}
+                  {quotaBlocked ? (
+                    <>
+                      <Lock className="mr-2 h-4 w-4" />
+                      {t("paywall.badge")}
+                    </>
+                  ) : parseMutation.isPending ? (
+                    t("upload.analyzing")
+                  ) : (
+                    t("upload.analyze")
+                  )}
                 </Button>
               </>
-            ) : (
+            ) : draft ? (
               <>
-                {/* warnings */}
                 {parse?.warnings?.length ? (
-                  <div className="rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
-                    <div className="text-sm font-medium text-slate-200">Advertencias</div>
-                    <ul className="mt-1 list-disc pl-5 text-sm text-slate-400">
+                  <div className="rounded-md border border-border bg-muted/40 px-3 py-2">
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      {t("upload.warnings")}
+                    </div>
+                    <ul className="mt-1 list-disc pl-5 text-sm text-muted-foreground">
                       {parse.warnings.map((w, idx) => (
                         <li key={idx}>{w}</li>
                       ))}
@@ -295,201 +380,231 @@ export default function ScrimCreatePage() {
                   </div>
                 ) : null}
 
-                {/* outcome */}
                 {parse?.draft?.outcome ? (
-                  <div className="flex items-center justify-between rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
-                    <div className="text-sm text-slate-200">Resultado detectado</div>
-                    {outcomeBadge(parse.draft.outcome)}
+                  <div className="flex items-center justify-between rounded-md border border-border bg-muted/40 px-3 py-2">
+                    <span className="text-sm text-foreground">{t("upload.detectedResult")}</span>
+                    <OutcomeBadge outcome={parse.draft.outcome} />
                   </div>
                 ) : null}
 
-                {/* rounds */}
-                {draft ? (
-                  <>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2">
-                        <Label className="text-slate-200">Rounds (tu equipo)</Label>
-                        <Input
-                          inputMode="numeric"
-                          value={String(draft.teamRounds)}
-                          onChange={(e) => setDraft({ ...draft, teamRounds: toIntSafe(e.target.value) })}
-                          className="border-slate-800 bg-slate-950/40 text-slate-100"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-slate-200">Rounds (rival)</Label>
-                        <Input
-                          inputMode="numeric"
-                          value={String(draft.enemyRounds)}
-                          onChange={(e) => setDraft({ ...draft, enemyRounds: toIntSafe(e.target.value) })}
-                          className="border-slate-800 bg-slate-950/40 text-slate-100"
-                        />
-                      </div>
-                    </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>{t("upload.teamRounds")}</Label>
+                    <Input
+                      inputMode="numeric"
+                      value={String(draft.teamRounds)}
+                      onChange={(e) => setDraft({ ...draft, teamRounds: toIntSafe(e.target.value) })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t("upload.enemyRounds")}</Label>
+                    <Input
+                      inputMode="numeric"
+                      value={String(draft.enemyRounds)}
+                      onChange={(e) => setDraft({ ...draft, enemyRounds: toIntSafe(e.target.value) })}
+                    />
+                  </div>
+                </div>
 
-                    {/* enemy composition (5) */}
-                    <div className="space-y-2">
-                      <Label className="text-slate-200">Composición rival (5 agentes)</Label>
-                      <Textarea
-                        value={draft.enemyComposition.join("\n")}
-                        onChange={(e) => {
-                          const list = e.target.value
-                            .split("\n")
-                            .map((s) => s.trim())
-                            .filter(Boolean);
-                          setDraft({ ...draft, enemyComposition: list });
-                        }}
-                        className="min-h-[120px] border-slate-800 bg-slate-950/40 text-slate-100"
-                        placeholder={"Jett\nSova\nOmen\nKAY/O\nKilljoy"}
+                <div className="space-y-2">
+                  <Label>{t("upload.enemyComp")}</Label>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {draft.enemyComposition.map((agent, idx) => (
+                      <Input
+                        key={idx}
+                        value={agent}
+                        onChange={(e) => updateEnemyAgent(idx, e.target.value)}
+                        placeholder={t("upload.agent")}
                       />
-                      <p className="text-xs text-slate-500">1 agente por línea. Deben ser 5.</p>
-                    </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t("upload.enemyCompHint")}</p>
+                </div>
 
-                    {/* team stats */}
-                    <div className="space-y-2">
-                      <Label className="text-slate-200">Team stats (5 jugadores)</Label>
+                <div className="space-y-2">
+                  <Label>{t("upload.teamStats")}</Label>
 
-                      <div className="space-y-2">
-                        {draft.teamStats.map((p, idx) => (
-                          <div
-                            key={idx}
-                            className="rounded-md border border-slate-800 bg-slate-950/40 p-3"
-                          >
-                            <div className="grid grid-cols-1 gap-2 md:grid-cols-12">
-                              <Input
-                                className="md:col-span-4 border-slate-800 bg-slate-950/20 text-slate-100"
-                                value={p.displayName ?? ""}
-                                onChange={(e) => {
-                                  const next = [...draft.teamStats];
-                                  next[idx] = { ...next[idx], displayName: e.target.value };
-                                  setDraft({ ...draft, teamStats: next });
-                                }}
-                                placeholder="displayName (o UNKNOWN)"
-                              />
-                              <Input
-                                className="md:col-span-3 border-slate-800 bg-slate-950/20 text-slate-100"
-                                value={p.agent}
-                                onChange={(e) => {
-                                  const next = [...draft.teamStats];
-                                  next[idx] = { ...next[idx], agent: e.target.value };
-                                  setDraft({ ...draft, teamStats: next });
-                                }}
-                                placeholder="agent"
-                              />
-                              <Input
-                                className="md:col-span-1 border-slate-800 bg-slate-950/20 text-slate-100"
-                                value={String(p.kills)}
-                                onChange={(e) => {
-                                  const next = [...draft.teamStats];
-                                  next[idx] = { ...next[idx], kills: toIntSafe(e.target.value) };
-                                  setDraft({ ...draft, teamStats: next });
-                                }}
-                                placeholder="K"
-                              />
-                              <Input
-                                className="md:col-span-1 border-slate-800 bg-slate-950/20 text-slate-100"
-                                value={String(p.deaths)}
-                                onChange={(e) => {
-                                  const next = [...draft.teamStats];
-                                  next[idx] = { ...next[idx], deaths: toIntSafe(e.target.value) };
-                                  setDraft({ ...draft, teamStats: next });
-                                }}
-                                placeholder="D"
-                              />
-                              <Input
-                                className="md:col-span-1 border-slate-800 bg-slate-950/20 text-slate-100"
-                                value={String(p.assists)}
-                                onChange={(e) => {
-                                  const next = [...draft.teamStats];
-                                  next[idx] = { ...next[idx], assists: toIntSafe(e.target.value) };
-                                  setDraft({ ...draft, teamStats: next });
-                                }}
-                                placeholder="A"
-                              />
-                              <Input
-                                className="md:col-span-2 border-slate-800 bg-slate-950/20 text-slate-100"
-                                value={String(p.acs)}
-                                onChange={(e) => {
-                                  const next = [...draft.teamStats];
-                                  next[idx] = { ...next[idx], acs: toIntSafe(e.target.value) };
-                                  setDraft({ ...draft, teamStats: next });
-                                }}
-                                placeholder="ACS"
-                              />
-                            </div>
+                  <div className="space-y-2">
+                    {draft.teamStats.map((player, idx) => (
+                      <PlayerRow
+                        key={idx}
+                        player={player}
+                        members={members}
+                        takenIds={draft.teamStats
+                          .map((p, i) => (i === idx ? null : p.userId ?? null))
+                          .filter((id): id is string => !!id)}
+                        onAssign={(memberId) => assignPlayer(idx, memberId)}
+                        onChange={(patch) => updateStat(idx, patch)}
+                      />
+                    ))}
+                  </div>
+                </div>
 
-                            {/* Nota: userId existe a veces (match del backend). No lo renderizamos como child. */}
-                            {p.userId ? (
-                              <div className="mt-2 text-xs text-slate-500">
-                                userId vinculado: <span className="text-slate-300">{p.userId}</span>
-                              </div>
-                            ) : (
-                              <div className="mt-2 text-xs text-slate-500">
-                                Sin match de usuario (userId). Confirmá displayName.
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                {clientError || createMutation.isError ? (
+                  <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger-foreground">
+                    {clientError ?? errorMessage(createMutation.error, t("common.error"))}
+                  </div>
+                ) : null}
 
-                    {createMutation.isError ? (
-                      <div className="rounded-md border border-red-700/30 bg-red-600/10 px-3 py-2 text-sm text-red-200">
-                        {errorMessage(createMutation.error)}
-                      </div>
-                    ) : null}
+                <Button
+                  className="w-full bg-brand text-brand-foreground hover:bg-brand-hover disabled:opacity-60"
+                  disabled={createMutation.isPending}
+                  onClick={save}
+                >
+                  {createMutation.isPending ? t("upload.saving") : t("upload.save")}
+                </Button>
 
-                    <Button
-                      className="w-full bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-60"
-                      disabled={createMutation.isPending}
-                      onClick={() => createMutation.mutate()}
-                    >
-                      {createMutation.isPending ? "Guardando..." : "Confirmar y guardar"}
-                    </Button>
-
-                    <p className="text-xs text-slate-500">
-                      El backend recalcula outcome y valida reglas (rondas, tipos, etc.).
-                    </p>
-                  </>
-                ) : (
-                  <Button
-                    variant="outline"
-                    className="border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-900"
-                    onClick={() => setDraft(makeEmptyDraft(type, map))}
-                  >
-                    No vino draft: crear borrador manual
-                  </Button>
-                )}
+                <p className="text-xs text-muted-foreground">{t("upload.saveHint")}</p>
               </>
+            ) : (
+              <Button variant="outline" onClick={() => setDraft(makeEmptyDraft(type, map))}>
+                {t("upload.noDraft")}
+              </Button>
             )}
           </CardContent>
         </Card>
 
-        {/* Derecha: preview + rawOutputId */}
-        <Card className="border-slate-800 bg-slate-950/30">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium text-slate-200">Vista previa</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {t("upload.preview")}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             {previewUrl ? (
-              <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-950/40">
-                <img src={previewUrl} alt="Captura" className="block w-full" />
+              <div className="overflow-hidden rounded-lg border border-border">
+                <img src={previewUrl} alt={t("upload.screenshot")} className="block w-full" />
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-slate-800 bg-slate-950/20 p-6">
-                <p className="text-sm text-slate-400">Seleccioná una captura para ver la vista previa.</p>
+              <div className="rounded-lg border border-dashed border-border p-6">
+                <p className="text-sm text-muted-foreground">{t("upload.previewEmpty")}</p>
               </div>
             )}
-
-            {parse?.rawOutputId ? (
-              <div className="rounded-md border border-slate-800 bg-slate-950/40 px-3 py-2">
-                <div className="text-xs text-slate-400">rawOutputId</div>
-                <div className="text-sm text-slate-200">{parse.rawOutputId}</div>
-              </div>
-            ) : null}
           </CardContent>
         </Card>
       </div>
     </div>
   );
+}
+
+function PlayerRow({
+  player,
+  members,
+  takenIds,
+  onAssign,
+  onChange,
+}: {
+  player: ScrimPlayerStatDto;
+  members: TeamMemberListItem[];
+  takenIds: string[];
+  onAssign: (memberUserId: string | null) => void;
+  onChange: (patch: Partial<ScrimPlayerStatDto>) => void;
+}) {
+  const { t } = useI18n();
+  const matched = !!player.userId;
+
+  return (
+    <div
+      className={cn(
+        "space-y-2 rounded-md border p-3",
+        matched ? "border-border bg-muted/20" : "border-amber-500/40 bg-amber-500/5"
+      )}
+    >
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-12">
+        <div className="md:col-span-5">
+          <Select
+            value={player.userId ?? UNASSIGNED}
+            onValueChange={(value) => onAssign(value === UNASSIGNED ? null : value)}
+          >
+            <SelectTrigger className={cn("w-full", !matched && "border-amber-500/50")}>
+              <SelectValue placeholder={t("upload.pickPlayer")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={UNASSIGNED}>{t("common.unassigned")}</SelectItem>
+              {members.map((member) => {
+                const id = member.user?.id;
+                if (!id) return null;
+                const taken = takenIds.includes(id);
+
+                return (
+                  <SelectItem key={id} value={id} disabled={taken}>
+                    {memberLabel(member)}
+                    {taken ? ` · ${t("upload.alreadyPicked")}` : ""}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Input
+          className="md:col-span-3"
+          value={player.agent}
+          onChange={(e) => onChange({ agent: e.target.value })}
+          placeholder={t("upload.agent")}
+        />
+
+        <Input
+          className="md:col-span-1"
+          value={String(player.kills)}
+          onChange={(e) => onChange({ kills: toIntSafe(e.target.value) })}
+          placeholder="K"
+        />
+        <Input
+          className="md:col-span-1"
+          value={String(player.deaths)}
+          onChange={(e) => onChange({ deaths: toIntSafe(e.target.value) })}
+          placeholder="D"
+        />
+        <Input
+          className="md:col-span-1"
+          value={String(player.assists)}
+          onChange={(e) => onChange({ assists: toIntSafe(e.target.value) })}
+          placeholder="A"
+        />
+        <Input
+          className="md:col-span-1"
+          value={String(player.acs)}
+          onChange={(e) => onChange({ acs: toIntSafe(e.target.value) })}
+          placeholder="ACS"
+        />
+      </div>
+
+      {matched ? (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <UserRound className="h-3.5 w-3.5" />
+          {t("upload.matched", { name: player.displayName ?? "" })}
+        </div>
+      ) : (
+        <div className="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>
+            {t("upload.unmatched")}. {t("upload.unmatchedHint")}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OutcomeBadge({ outcome }: { outcome: ScrimOutcome }) {
+  const { t } = useI18n();
+
+  if (outcome === "WIN") {
+    return (
+      <Badge variant="outline" className="border-success/30 bg-success/10 text-success">
+        {t("outcome.win")}
+      </Badge>
+    );
+  }
+
+  if (outcome === "LOSS") {
+    return (
+      <Badge variant="outline" className="border-danger/30 bg-danger/10 text-danger">
+        {t("outcome.loss")}
+      </Badge>
+    );
+  }
+
+  return <Badge variant="outline">{t("outcome.draw")}</Badge>;
 }

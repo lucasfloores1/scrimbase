@@ -22,7 +22,6 @@ export function StratCreatePage() {
     const [notes, setNotes] = useState("");
     const [file, setFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const canSubmit = !isPending;
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -57,41 +56,40 @@ export function StratCreatePage() {
             <header className="flex items-center justify-between">
                 <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                    <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-100">
+                    <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-foreground">
                     Crear strat
                     </h1>
 
                     <Badge
                     variant="outline"
-                    className="border-slate-700 bg-slate-950 text-slate-200"
+                    className="border-border bg-background text-foreground"
                     >
                     Nueva
                     </Badge>
                 </div>
 
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-muted-foreground">
                     Subí una captura de la estrategia y agregá detalles.
                 </p>
                 </div>
 
                 <Button
                 variant="outline"
-                className="border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-900"
                 onClick={() => navigate("/app/strats")}
                 >
                 Cancelar
                 </Button>
             </header>
 
-            <Separator className="bg-slate-800" />
+            <Separator className="bg-accent" />
 
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 
                 {/* Formulario */}
                 <form onSubmit={onSubmit}>
-                <Card className="border-slate-800 bg-slate-950/30">
+                <Card>
                 <CardHeader>
-                    <CardTitle className="text-sm font-medium text-slate-200">
+                    <CardTitle className="text-sm font-medium text-foreground">
                     Información de la strat
                     </CardTitle>
                 </CardHeader>
@@ -99,7 +97,7 @@ export function StratCreatePage() {
                 <CardContent className="space-y-4">
 
                     <div className="space-y-2">
-                    <Label className="text-slate-200">
+                    <Label className="text-foreground">
                         Nombre
                     </Label>
 
@@ -107,12 +105,11 @@ export function StratCreatePage() {
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Split A default"
-                        className="border-slate-800 bg-slate-950/40 text-slate-100"
                     />
                     </div>
 
                     <div className="space-y-2">
-                    <Label className="text-slate-200">
+                    <Label className="text-foreground">
                         Mapa
                     </Label>
 
@@ -120,19 +117,18 @@ export function StratCreatePage() {
                         value={map}
                         onChange={(e) => setMap(e.target.value)}
                         placeholder="Split"
-                        className="border-slate-800 bg-slate-950/40 text-slate-100"
                     />
                     </div>
 
                     <div className="space-y-2">
-                    <Label className="text-slate-200">
+                    <Label className="text-foreground">
                         Side
                     </Label>
 
                     <select
                         value={side}
                         onChange={(e) => setSide(e.target.value as "ATTACK" | "DEFENSE")}
-                        className="flex h-9 w-full rounded-md border border-slate-800 bg-slate-950/40 px-3 py-1 text-sm text-slate-100"
+                        className="flex h-9 w-full rounded-md border px-3 py-1 text-sm text-foreground"
                     >
                         <option value="ATTACK">Attack</option>
                         <option value="DEFENSE">Defense</option>
@@ -140,7 +136,7 @@ export function StratCreatePage() {
                     </div>
 
                     <div className="space-y-2">
-                    <Label className="text-slate-200">
+                    <Label className="text-foreground">
                         Notas
                     </Label>
 
@@ -148,12 +144,12 @@ export function StratCreatePage() {
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         placeholder="Explicación de la ejecución..."
-                        className="min-h-[120px] border-slate-800 bg-slate-950/40 text-slate-100"
+                        className="min-h-[120px]"
                     />
                     </div>
 
                     <div className="space-y-2">
-                    <Label className="text-slate-200">
+                    <Label className="text-foreground">
                         Screenshot
                     </Label>
 
@@ -161,22 +157,22 @@ export function StratCreatePage() {
                         type="file"
                         accept="image/png,image/jpeg,image/webp"
                         onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                        className="border-slate-800 bg-slate-950/40 text-slate-100 file:text-slate-200"
+                        className="file:text-foreground"
                     />
 
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-muted-foreground">
                         Subí una captura del mapa o setup de la estrategia.
                     </p>
                     </div>
 
                     {error && (
-                    <div className="rounded-md border border-red-700/30 bg-red-600/10 px-3 py-2 text-sm text-red-200">
+                    <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
                         Error al crear la strat.
                     </div>
                     )}
 
                     <Button
-                    className="w-full bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-60"
+                    className="w-full bg-brand text-brand-foreground hover:bg-brand-hover disabled:opacity-60"
                     disabled={!file || !name || !map || isPending}
                     type="submit"
                     >
@@ -189,9 +185,9 @@ export function StratCreatePage() {
 
                 {/* Preview */}
 
-                <Card className="border-slate-800 bg-slate-950/30">
+                <Card>
                 <CardHeader>
-                    <CardTitle className="text-sm font-medium text-slate-200">
+                    <CardTitle className="text-sm font-medium text-foreground">
                     Vista previa
                     </CardTitle>
                 </CardHeader>
@@ -199,7 +195,7 @@ export function StratCreatePage() {
                 <CardContent>
 
                     {previewUrl ? (
-                    <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-950/40">
+                    <div className="overflow-hidden rounded-lg border">
                         <img
                         src={previewUrl}
                         alt="preview"
@@ -207,8 +203,8 @@ export function StratCreatePage() {
                         />
                     </div>
                     ) : (
-                    <div className="rounded-lg border border-dashed border-slate-800 bg-slate-950/20 p-6">
-                        <p className="text-sm text-slate-400">
+                    <div className="rounded-lg border border-dashed border-border bg-card/30 p-6">
+                        <p className="text-sm text-muted-foreground">
                         Seleccioná una captura para ver la vista previa.
                         </p>
                     </div>

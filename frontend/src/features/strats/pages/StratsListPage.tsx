@@ -6,7 +6,6 @@ import { stratsApi } from "@/shared/api/strats.api";
 import type { StratDto } from "@/shared/types/dto";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 
 import { LoadingState } from "@/shared/ui/feedback/LoadingState";
 import { ErrorState } from "@/shared/ui/feedback/ErrorState";
@@ -74,17 +73,17 @@ export function StratsListPage() {
   return (
     <div className="space-y-4">
 
-      <Card className="border-slate-800 bg-slate-950/30">
+      <Card>
         <CardContent className="p-0">
           <div className="w-full overflow-x-auto">
             <table className="w-full text-sm">
 
               <thead>
-                <tr className="border-b border-slate-800">
-                  <th className="px-4 py-3 text-left font-medium text-slate-400">
+                <tr className="border-b border-border">
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                     Nombre
                   </th>
-                  <th className="px-4 py-3 text-left font-medium text-slate-400">
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                     Mapa
                   </th>
                 </tr>
@@ -94,14 +93,14 @@ export function StratsListPage() {
                 {strats.map((s) => (
                   <tr
                     key={s.id}
-                    className="border-b border-slate-900 hover:bg-slate-900/30 cursor-pointer"
+                    className="border-b border-border hover:bg-accent/50 cursor-pointer"
                     onClick={() => navigate(`/app/strats/${s.id}`)}
                   >
-                    <td className="px-4 py-3 text-slate-200">
+                    <td className="px-4 py-3 text-foreground">
                       {s.name}
                     </td>
 
-                    <td className="px-4 py-3 text-slate-200">
+                    <td className="px-4 py-3 text-foreground">
                       {s.map}
                     </td>
                   </tr>

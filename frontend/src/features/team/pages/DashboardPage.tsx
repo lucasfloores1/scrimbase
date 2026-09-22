@@ -1,6 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { Plus } from "lucide-react";
 
+import { useI18n } from "@/app/providers/I18nProvider";
+import { PaywallCard } from "@/features/billing/components/PaywallCard";
+import { useBilling } from "@/features/billing/hooks/useBilling";
 import { dashboardApi } from "@/shared/api/dashboard.api";
 import type { DashboardResponseDto, ScrimOutcome } from "@/shared/types/dto";
 
@@ -15,7 +19,7 @@ import { EmptyState } from "@/shared/ui/feedback/EmptyState";
 
 function clampPercent(value: number): number {
   if (!Number.isFinite(value)) return 0;
-  const percent = value <= 1 ? value * 100 : value; // solo formato
+  const percent = value <= 1 ? value * 100 : value;
   return Math.max(0, Math.min(100, percent));
 }
 
@@ -23,35 +27,16 @@ function formatPercent(value: number): string {
   return `${clampPercent(value).toFixed(0)}%`;
 }
 
-function formatDate(iso: string): string {
-  try {
-    return new Intl.DateTimeFormat("es-AR", { dateStyle: "medium" }).format(new Date(iso));
-  } catch {
-    return iso;
-  }
-}
-
-function outcomeStyle(outcome: ScrimOutcome): { text: string; className: string } {
-  if (outcome === "WIN") {
-    return {
-      text: "Victoria",
-      className: "bg-emerald-600/15 text-emerald-200 border-emerald-600/30",
-    };
-  }
-  if (outcome === "LOSS") {
-    return {
-      text: "Derrota",
-      className: "bg-red-600/15 text-red-200 border-red-600/30",
-    };
-  }
-  return {
-    text: "Empate",
-    className: "bg-slate-600/15 text-slate-200 border-slate-600/30",
-  };
+function outcomeClass(outcome: ScrimOutcome) {
+  if (outcome === "WIN") return "bg-success/10 text-success border-success/30";
+  if (outcome === "LOSS") return "bg-danger/10 text-danger border-danger/30";
+  return "bg-muted text-muted-foreground border-border";
 }
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const { t, formatDate } = useI18n();
+  const billing = useBilling();
 
   const dashboardQuery = useQuery({
     queryKey: ["dashboard"],
@@ -59,18 +44,25 @@ export function DashboardPage() {
     staleTime: 30_000,
   });
 
+  const outcomeLabel = (outcome: ScrimOutcome) => {
+    if (outcome === "WIN") return t("outcome.win");
+    if (outcome === "LOSS") return t("outcome.loss");
+    return t("outcome.draw");
+  };
+
   if (dashboardQuery.isLoading) {
-    return <LoadingState title="Cargando dashboard" description="Consultando el resumen del equipo..." />;
+    return <LoadingState title={t("dashboard.loading")} description={t("dashboard.loadingDesc")} />;
   }
 
   if (dashboardQuery.isError) {
     const message =
-      dashboardQuery.error instanceof Error ? dashboardQuery.error.message : "Error inesperado";
+      dashboardQuery.error instanceof Error ? dashboardQuery.error.message : t("common.error");
+
     return (
       <ErrorState
-        title="No se pudo cargar el dashboard"
+        title={t("dashboard.loadError")}
         description={message}
-        actionLabel="Reintentar"
+        actionLabel={t("common.retry")}
         onAction={() => dashboardQuery.refetch()}
       />
     );
@@ -78,105 +70,110 @@ export function DashboardPage() {
 
   const data = dashboardQuery.data as DashboardResponseDto;
 
-  const teamName = data?.team?.name ?? "Equipo";
+  const teamName = data?.team?.name ?? t("nav.team");
   const overview = data?.overview;
+  const last10 = data?.last10;
   const bestMap = data?.bestMap ?? null;
   const recentScrims = Array.isArray(data?.recentScrims) ? data.recentScrims : [];
 
   const winrate = typeof overview?.winrate === "number" ? overview.winrate : 0;
   const totalScrims = typeof overview?.total === "number" ? overview.total : 0;
+  const roundDiff = typeof overview?.roundDiff === "number" ? overview.roundDiff : 0;
+
+  const showPaywall = billing.status ? !billing.status.canUploadScrim : false;
 
   return (
     <div className="space-y-6">
-      {/* 1) Header */}
       <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
-          <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-100">
+          <h1 className="text-xl font-semibold tracking-tight text-foreground md:text-2xl">
             {teamName}
           </h1>
-          <p className="text-sm text-slate-400">
-            Dashboard · Resumen del equipo
-          </p>
+          <p className="text-sm text-muted-foreground">{t("dashboard.subtitle")}</p>
         </div>
 
         <Button
-          className="bg-blue-600 hover:bg-blue-500 text-white"
+          className="bg-brand text-brand-foreground hover:bg-brand-hover"
           onClick={() => navigate("/app/scrims/new")}
         >
-          Subir scrim
+          <Plus className="mr-1 h-4 w-4" />
+          {t("nav.uploadScrim")}
         </Button>
       </header>
 
-      <Separator className="bg-slate-800" />
+      <Separator />
 
-      {/* 2) Grid de KPIs */}
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card className="border-slate-800 bg-slate-950/30">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Winrate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-semibold text-slate-100">{formatPercent(winrate)}</div>
-            <p className="mt-1 text-xs text-slate-400">Dato provisto por el backend</p>
-          </CardContent>
-        </Card>
+      {showPaywall && billing.status ? <PaywallCard status={billing.status} /> : null}
 
-        <Card className="border-slate-800 bg-slate-950/30">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Total scrims</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-semibold text-slate-100">{totalScrims}</div>
-            <p className="mt-1 text-xs text-slate-400">Scrims registradas</p>
-          </CardContent>
-        </Card>
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Kpi title={t("dashboard.winrate")} value={formatPercent(winrate)}>
+          {overview ? (
+            <span>
+              {overview.wins}W · {overview.losses}L · {overview.draws}D
+            </span>
+          ) : null}
+        </Kpi>
 
-        <Card className="border-slate-800 bg-slate-950/30">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-300">Mejor mapa</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {bestMap ? (
-              <div className="space-y-1">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-lg font-semibold text-slate-100">{bestMap.name}</div>
-                  <Badge
-                    variant="outline"
-                    className="border-blue-600/30 bg-blue-600/10 text-blue-200"
-                  >
-                    {formatPercent(bestMap.winrate)}
-                  </Badge>
-                </div>
-                <p className="text-xs text-slate-400">Basado en {bestMap.matches} scrims</p>
-              </div>
-            ) : (
-              <p className="text-sm text-slate-400">Todavía no hay suficiente información.</p>
-            )}
-          </CardContent>
-        </Card>
+        <Kpi title={t("dashboard.totalScrims")} value={String(totalScrims)} />
+
+        <Kpi
+          title={t("dashboard.last10")}
+          value={last10 ? formatPercent(last10.winrate) : "—"}
+        >
+          {last10 ? (
+            <span>
+              {last10.wins}W · {last10.losses}L · {last10.draws}D
+            </span>
+          ) : null}
+        </Kpi>
+
+        <Kpi
+          title={t("dashboard.roundDiff")}
+          value={`${roundDiff > 0 ? "+" : ""}${roundDiff}`}
+        />
       </section>
 
-      {/* 3) Últimas scrims */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            {t("dashboard.bestMap")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {bestMap ? (
+            <div className="flex items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="text-lg font-semibold text-foreground">{bestMap.name}</div>
+                <p className="text-xs text-muted-foreground">
+                  {t("dashboard.basedOn", { count: bestMap.matches })}
+                </p>
+              </div>
+              <Badge variant="outline" className="border-brand/30 bg-brand/10 text-brand">
+                {formatPercent(bestMap.winrate)}
+              </Badge>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">{t("dashboard.notEnough")}</p>
+          )}
+        </CardContent>
+      </Card>
+
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-slate-300">Últimas scrims</h2>
-          <Button
-            variant="outline"
-            className="border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-900"
-            onClick={() => navigate("/app/scrims")}
-          >
-            Ver todas
+          <h2 className="text-sm font-medium text-muted-foreground">{t("dashboard.recent")}</h2>
+          <Button variant="outline" onClick={() => navigate("/app/scrims")}>
+            {t("dashboard.seeAll")}
           </Button>
         </div>
 
-        <Card className="border-slate-800 bg-slate-950/30">
+        <Card>
           <CardContent className="p-0">
             {recentScrims.length === 0 ? (
               <div className="p-6">
                 <EmptyState
-                  title="Todavía no hay scrims registradas"
-                  description="Subí una scrim para empezar a ver el resumen del equipo."
-                  actionLabel="Subir scrim"
+                  title={t("scrims.empty")}
+                  description={t("scrims.emptyDesc")}
+                  actionLabel={t("nav.uploadScrim")}
                   onAction={() => navigate("/app/scrims/new")}
                 />
               </div>
@@ -184,35 +181,34 @@ export function DashboardPage() {
               <div className="w-full overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-800">
-                      <th className="px-4 py-3 text-left font-medium text-slate-400">Fecha</th>
-                      <th className="px-4 py-3 text-left font-medium text-slate-400">Mapa</th>
-                      <th className="px-4 py-3 text-left font-medium text-slate-400">Tipo</th>
-                      <th className="px-4 py-3 text-left font-medium text-slate-400">Resultado</th>
-                      <th className="px-4 py-3 text-left font-medium text-slate-400">Score</th>
+                    <tr className="border-b border-border">
+                      <Th>{t("scrims.date")}</Th>
+                      <Th>{t("scrims.map")}</Th>
+                      <Th>{t("scrims.type")}</Th>
+                      <Th>{t("scrims.result")}</Th>
+                      <Th>{t("scrims.score")}</Th>
                     </tr>
                   </thead>
                   <tbody>
-                    {recentScrims.map((s) => {
-                      const out = outcomeStyle(s.outcome);
-                      return (
-                        <tr key={s.id} className="border-b border-slate-900 hover:bg-slate-900/30">
-                          <td className="px-4 py-3 text-slate-200 whitespace-nowrap">
-                            {formatDate(s.createdAt)}
-                          </td>
-                          <td className="px-4 py-3 text-slate-200 whitespace-nowrap">{s.map}</td>
-                          <td className="px-4 py-3 text-slate-200 whitespace-nowrap">{s.type}</td>
-                          <td className="px-4 py-3 whitespace-nowrap">
-                            <Badge variant="outline" className={out.className}>
-                              {out.text}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-3 text-slate-200 whitespace-nowrap">
-                            {s.teamRounds}–{s.enemyRounds}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {recentScrims.map((s) => (
+                      <tr
+                        key={s.id}
+                        className="cursor-pointer border-b border-border last:border-0 hover:bg-accent/50"
+                        onClick={() => navigate(`/app/scrims/${s.id}`)}
+                      >
+                        <Td>{formatDate(s.createdAt)}</Td>
+                        <Td>{s.map}</Td>
+                        <Td>{s.type}</Td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <Badge variant="outline" className={outcomeClass(s.outcome)}>
+                            {outcomeLabel(s.outcome)}
+                          </Badge>
+                        </td>
+                        <Td>
+                          {s.teamRounds}–{s.enemyRounds}
+                        </Td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -222,6 +218,36 @@ export function DashboardPage() {
       </section>
     </div>
   );
+}
+
+function Kpi({
+  title,
+  value,
+  children,
+}: {
+  title: string;
+  value: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="text-3xl font-semibold text-foreground">{value}</div>
+        {children ? <p className="mt-1 text-xs text-muted-foreground">{children}</p> : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function Th({ children }: { children: React.ReactNode }) {
+  return <th className="px-4 py-3 text-left font-medium text-muted-foreground">{children}</th>;
+}
+
+function Td({ children }: { children: React.ReactNode }) {
+  return <td className="px-4 py-3 whitespace-nowrap text-foreground">{children}</td>;
 }
 
 export default DashboardPage;

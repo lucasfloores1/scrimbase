@@ -17,18 +17,18 @@ function outcomeStyle(outcome: ScrimOutcome): { text: string; className: string 
   if (outcome === "WIN") {
     return {
       text: "Victoria",
-      className: "bg-emerald-600/15 text-emerald-200 border-emerald-600/30",
+      className: "bg-success/10 text-success border-success/30",
     };
   }
   if (outcome === "LOSS") {
     return {
       text: "Derrota",
-      className: "bg-red-600/15 text-red-200 border-red-600/30",
+      className: "bg-danger/10 text-danger border-danger/30",
     };
   }
   return {
     text: "Empate",
-    className: "bg-slate-600/15 text-slate-200 border-slate-600/30",
+    className: "bg-muted text-muted-foreground border-border",
   };
 }
 
@@ -79,14 +79,14 @@ export default function ScrimDetailPage() {
     <div className="space-y-6">
       <header className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-100">
+          <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-foreground">
             {s.map} · {typeLabel(s.type)}
           </h1>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className={out.className}>
               {out.text}
             </Badge>
-            <span className="text-sm text-slate-300">
+            <span className="text-sm text-muted-foreground">
               {s.teamRounds}–{s.enemyRounds}
             </span>
           </div>
@@ -94,19 +94,18 @@ export default function ScrimDetailPage() {
 
         <Button
           variant="outline"
-          className="border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-900"
           onClick={() => navigate("/app/scrims")}
         >
           Volver
         </Button>
       </header>
 
-      <Separator className="bg-slate-800" />
+      <Separator className="bg-accent" />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card className="border-slate-800 bg-slate-950/30">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium text-slate-200">Composición rival</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Composición rival</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
@@ -114,7 +113,7 @@ export default function ScrimDetailPage() {
                 <Badge
                   key={`${a}-${idx}`}
                   variant="outline"
-                  className="border-slate-700 bg-slate-950 text-slate-200"
+                  className="border-border bg-background text-foreground"
                 >
                   {a}
                 </Badge>
@@ -123,34 +122,34 @@ export default function ScrimDetailPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-800 bg-slate-950/30">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium text-slate-200">Team stats</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Team stats</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="w-full overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-800">
-                    <th className="px-4 py-3 text-left font-medium text-slate-400">Jugador</th>
-                    <th className="px-4 py-3 text-left font-medium text-slate-400">Agente</th>
-                    <th className="px-4 py-3 text-left font-medium text-slate-400">K</th>
-                    <th className="px-4 py-3 text-left font-medium text-slate-400">D</th>
-                    <th className="px-4 py-3 text-left font-medium text-slate-400">A</th>
-                    <th className="px-4 py-3 text-left font-medium text-slate-400">ACS</th>
+                  <tr className="border-b border-border">
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Jugador</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Agente</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">K</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">D</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">A</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">ACS</th>
                   </tr>
                 </thead>
                 <tbody>
                   {s.teamStats?.map((p, idx) => (
-                    <tr key={idx} className="border-b border-slate-900">
-                      <td className="px-4 py-3 text-slate-200 whitespace-nowrap">
+                    <tr key={idx} className="border-b border-border">
+                      <td className="px-4 py-3 text-foreground whitespace-nowrap">
                         {p.displayName ?? p.userId ?? "—"}
                       </td>
-                      <td className="px-4 py-3 text-slate-200 whitespace-nowrap">{p.agent}</td>
-                      <td className="px-4 py-3 text-slate-200 whitespace-nowrap">{p.kills}</td>
-                      <td className="px-4 py-3 text-slate-200 whitespace-nowrap">{p.deaths}</td>
-                      <td className="px-4 py-3 text-slate-200 whitespace-nowrap">{p.assists}</td>
-                      <td className="px-4 py-3 text-slate-200 whitespace-nowrap">{p.acs}</td>
+                      <td className="px-4 py-3 text-foreground whitespace-nowrap">{p.agent}</td>
+                      <td className="px-4 py-3 text-foreground whitespace-nowrap">{p.kills}</td>
+                      <td className="px-4 py-3 text-foreground whitespace-nowrap">{p.deaths}</td>
+                      <td className="px-4 py-3 text-foreground whitespace-nowrap">{p.assists}</td>
+                      <td className="px-4 py-3 text-foreground whitespace-nowrap">{p.acs}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -161,12 +160,12 @@ export default function ScrimDetailPage() {
       </div>
 
       {s.screenshotUrl ? (
-        <Card className="border-slate-800 bg-slate-950/30">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-sm font-medium text-slate-200">Captura</CardTitle>
+            <CardTitle className="text-sm font-medium text-foreground">Captura</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-950/40">
+            <div className="overflow-hidden rounded-lg border">
               <img src={ env.assetsUrl+s.screenshotUrl } alt="Captura" className="block w-full" />
             </div>
           </CardContent>

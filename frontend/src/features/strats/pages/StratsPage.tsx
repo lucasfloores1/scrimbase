@@ -8,23 +8,23 @@ export function StratsPage() {
     <div className="space-y-6">
       <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
-          <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-100">
+          <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-foreground">
             Strats
           </h1>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-muted-foreground">
             Registro y revisión de strats del equipo.
           </p>
         </div>
 
         <Button
-          className="bg-blue-600 text-white hover:bg-blue-500"
+          className="bg-brand text-brand-foreground hover:bg-brand-hover"
           onClick={() => navigate("/app/strats/new")}
         >
           Subir strat
         </Button>
       </header>
 
-      <Separator className="bg-slate-800" />
+      <Separator />
 
       <Outlet />
     </div>

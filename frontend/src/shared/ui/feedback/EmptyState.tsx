@@ -1,7 +1,8 @@
+import { useI18n } from "@/app/providers/I18nProvider";
 import { Button } from "@/components/ui/button";
 
 export function EmptyState({
-  title = "No hay datos",
+  title,
   description,
   actionLabel,
   onAction,
@@ -11,15 +12,17 @@ export function EmptyState({
   actionLabel?: string;
   onAction?: () => void;
 }) {
+  const { t } = useI18n();
+
   return (
-    <div className="space-y-3 rounded-lg border border-slate-800 bg-slate-950/30 p-4">
+    <div className="space-y-3 rounded-lg border p-4">
       <div className="space-y-1">
-        <div className="text-sm font-medium text-slate-200">{title}</div>
-        {description ? <div className="text-sm text-slate-400">{description}</div> : null}
+        <div className="text-sm font-medium text-foreground">{title ?? t("common.noData")}</div>
+        {description ? <div className="text-sm text-muted-foreground">{description}</div> : null}
       </div>
 
       {actionLabel && onAction ? (
-        <Button className="bg-blue-600 text-white hover:bg-blue-500" onClick={onAction}>
+        <Button className="bg-brand text-brand-foreground hover:bg-brand-hover" onClick={onAction}>
           {actionLabel}
         </Button>
       ) : null}

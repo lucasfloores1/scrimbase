@@ -19,6 +19,8 @@ import ScrimDetailPage from "@/features/scrims/pages/ScrimDetailPage";
 import StratsListPage from "@/features/strats/pages/StratsListPage";
 import StratCreatePage from "@/features/strats/pages/StratCreatePage";
 import StratDetailPage from "@/features/strats/pages/StratDetailPage";
+import PlansPage from "@/features/billing/pages/PlansPage";
+import CheckoutPage from "@/features/billing/pages/CheckoutPage";
 
 export const router = createBrowserRouter([
   {
@@ -62,6 +64,8 @@ export const router = createBrowserRouter([
                   { path: ":stratId", element: <StratDetailPage /> },
                 ],
               },
+              { path: "/app/plans", element: <PlansPage /> },
+              { path: "/app/plans/checkout/:checkoutId", element: <CheckoutPage /> },
               { path: "/app/team", element: <TeamPage /> },
               { path: "/app/settings", element: <SettingsPage /> },
             ],

@@ -1,16 +1,28 @@
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/app/providers/AuthProvider";
+import { Menu, Plus } from "lucide-react";
 
-function initials(email?: string) {
-  if (!email) return "U";
-  return email.slice(0, 2).toUpperCase();
+import { useAuth } from "@/app/providers/AuthProvider";
+import { useI18n } from "@/app/providers/I18nProvider";
+import { PlanPill } from "@/features/billing/components/PlanPill";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LanguageSwitcher } from "@/shared/ui/components/LanguageSwitcher";
+import { ThemeToggle } from "@/shared/ui/components/ThemeToggle";
+
+function initials(value?: string) {
+  if (!value) return "U";
+  return value.slice(0, 2).toUpperCase();
 }
 
 export function AppTopbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) {
   const { user, logout } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
 
   function handleLogout() {
@@ -19,54 +31,51 @@ export function AppTopbar({ onOpenMobileNav }: { onOpenMobileNav: () => void }) 
   }
 
   return (
-    <header className="sticky top-0 z-20 border-b border-slate-800 bg-slate-950/70 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+    <header className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4">
         <div className="flex items-center gap-2">
-          {/* Mobile: botón para abrir sidebar (drawer) */}
           <Button
             variant="outline"
-            className="border-slate-800 bg-slate-950 text-slate-200 hover:bg-slate-900 md:hidden"
+            size="icon"
+            className="md:hidden"
+            aria-label={t("nav.menu")}
             onClick={onOpenMobileNav}
           >
-            Menu
+            <Menu className="h-4 w-4" />
           </Button>
 
-          <div className="hidden md:block">
-            <div className="text-sm font-semibold text-slate-100">Dashboard</div>
-            <div className="text-xs text-slate-400">
-              TeamId: {user?.teamMember?.teamId ?? "—"}
-            </div>
-          </div>
+          <div className="text-sm font-semibold tracking-tight text-foreground">Scrimbase</div>
+          <PlanPill className="hidden sm:inline-flex" />
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            Upload scrim
+        <div className="flex items-center gap-1 sm:gap-2">
+          <Button
+            className="bg-brand text-brand-foreground hover:bg-brand-hover"
+            onClick={() => navigate("/app/scrims/new")}
+          >
+            <Plus className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline">{t("nav.uploadScrim")}</span>
           </Button>
+
+          <LanguageSwitcher />
+          <ThemeToggle />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-2 rounded-md px-2 py-1 text-sm text-slate-200 hover:bg-slate-900">
+              <button className="flex items-center gap-2 rounded-md px-2 py-1 text-sm text-foreground hover:bg-accent">
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback>{initials(user?.email)}</AvatarFallback>
+                  <AvatarFallback>{initials(user?.username ?? user?.email)}</AvatarFallback>
                 </Avatar>
-                <span className="hidden sm:inline">{user?.email}</span>
+                <span className="hidden max-w-[12rem] truncate lg:inline">{user?.email}</span>
               </button>
             </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800">
-              <DropdownMenuItem
-                onClick={() => navigate("/app/settings")}
-                className="text-slate-200 focus:bg-slate-800 focus:text-slate-100"
-              >
-                Settings
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate("/app/plans")}>{t("nav.plans")}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/app/settings")}>
+                {t("nav.settings")}
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleLogout}
-                className="text-slate-200 focus:bg-slate-800 focus:text-slate-100"
-              >
-                Logout
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>{t("nav.logout")}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -15,6 +15,7 @@ import { join } from 'path';
 import { ScrimsModule } from './scrims/scrims.module';
 import { StratsModule } from './strats/strats.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { BillingModule } from './billing/billing.module';
 
 const mongoLogger = new Logger('MongoDB');
 
@@ -53,7 +54,8 @@ const mongoLogger = new Logger('MongoDB');
     TeamsModule,
     ScrimsModule,
     StratsModule,
-    DashboardModule
+    DashboardModule,
+    BillingModule
   ],
   controllers: [AppController],
   providers: [AppService],

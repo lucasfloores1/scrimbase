@@ -25,19 +25,19 @@ export function CreateTeamCard() {
         create({ name: name, tag: tag })
     }
     return (
-        <Card className="border border-slate-800 bg-slate-950/40 shadow-lg">
+        <Card className="border shadow-lg">
 
   <CardHeader className="space-y-2">
 
     <div className="flex items-center gap-2">
-      <Plus className="h-5 w-5 text-blue-400" />
+      <Plus className="h-5 w-5 text-brand" />
 
-      <CardTitle className="text-lg text-slate-100">
+      <CardTitle className="text-lg text-foreground">
         Crear un equipo
       </CardTitle>
     </div>
 
-    <CardDescription className="text-slate-400">
+    <CardDescription className="text-muted-foreground">
       Creá un nuevo equipo e invitá a tus compañeros.
     </CardDescription>
 
@@ -48,7 +48,7 @@ export function CreateTeamCard() {
     <form onSubmit={onSubmit} className="space-y-4">
 
       <div className="space-y-2">
-        <Label htmlFor="name" className="text-slate-200">
+        <Label htmlFor="name" className="text-foreground">
           Nombre del equipo
         </Label>
 
@@ -58,12 +58,12 @@ export function CreateTeamCard() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Scrimbase Team"
-          className="border-slate-800 bg-slate-950/40 text-slate-100 placeholder:text-slate-500"
+          className="placeholder:text-muted-foreground"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="tag" className="text-slate-200">
+        <Label htmlFor="tag" className="text-foreground">
           TAG del equipo
         </Label>
 
@@ -73,12 +73,12 @@ export function CreateTeamCard() {
           value={tag}
           onChange={(e) => setTag(e.target.value)}
           placeholder="#SCRIM"
-          className="border-slate-800 bg-slate-950/40 text-slate-100 placeholder:text-slate-500"
+          className="placeholder:text-muted-foreground"
         />
       </div>
 
       {error && (
-        <div className="rounded-md border border-red-700/30 bg-red-600/10 px-3 py-2 text-sm text-red-200">
+        <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
           {errorToMessage(error)}
         </div>
       )}
@@ -86,7 +86,7 @@ export function CreateTeamCard() {
       <Button
         type="submit"
         disabled={!canSubmit}
-        className="w-full bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-60"
+        className="w-full bg-brand text-brand-foreground hover:bg-brand-hover disabled:opacity-60"
       >
         {isPending ? "Creando..." : "Crear equipo"}
       </Button>

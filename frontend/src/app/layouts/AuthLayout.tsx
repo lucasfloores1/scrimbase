@@ -4,13 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function AuthLayout() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-background text-foreground">
       <MarketingNavbar />
       <main className="mx-auto flex min-h-[calc(100vh-56px)] max-w-6xl items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
-          <Card className="border-slate-800 bg-slate-900/40">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-slate-200">Scrimbase</CardTitle>
+              <CardTitle className="text-foreground">Scrimbase</CardTitle>
             </CardHeader>
             <CardContent>
               <Outlet />

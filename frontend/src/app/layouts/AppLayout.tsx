@@ -8,12 +8,12 @@ export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-background text-foreground">
       <AppTopbar onOpenMobileNav={() => setMobileNavOpen(true)} />
 
       {/* Mobile drawer */}
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
-        <SheetContent side="left" className="p-0 bg-slate-900 border-slate-800">
+        <SheetContent side="left" className="w-64 border-border bg-sidebar p-0">
           <AppSidebar />
         </SheetContent>
       </Sheet>
@@ -26,7 +26,7 @@ export function AppLayout() {
 
         {/* Main content */}
         <main className="flex-1 p-4 md:p-6">
-          <div className="rounded-lg border border-slate-800 bg-slate-900/30 p-4 md:p-6">
+          <div className="rounded-lg border border-border bg-surface/40 p-4 md:p-6">
             <Outlet />
           </div>
         </main>

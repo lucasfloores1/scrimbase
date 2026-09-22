@@ -179,3 +179,50 @@ export interface CreateStratDto {
   map: string;
   side: "ATTACK" | "DEFENSE";
 }
+// ------------------ Billing ------------------
+
+export type TeamPlan = "FREE" | "PRO";
+export type BillingCycle = "MONTHLY" | "SEMIANNUAL" | "ANNUAL";
+export type SubscriptionStatus = "ACTIVE" | "CANCELED" | "EXPIRED";
+export type CheckoutStatus = "PENDING" | "PAID" | "EXPIRED";
+
+export interface BillingPriceDto {
+  cycle: BillingCycle;
+  amount: number;
+  months: number;
+  currency: string;
+  pricePerMonth: number;
+  savingsPercent: number;
+}
+
+export interface BillingUsageDto {
+  scrimsToday: number;
+  scrimsThisPeriod: number;
+  dailyLimit: number | null;
+  remainingToday: number | null;
+  resetsAt: string;
+}
+
+export interface BillingStatusDto {
+  plan: TeamPlan;
+  status: SubscriptionStatus;
+  cycle: BillingCycle | null;
+  provider: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  usage: BillingUsageDto;
+  canUploadScrim: boolean;
+  prices: BillingPriceDto[];
+}
+
+export interface BillingCheckoutDto {
+  checkoutId: string;
+  provider: string;
+  cycle: BillingCycle;
+  amount: number;
+  currency: string;
+  months: number;
+  status: CheckoutStatus;
+  expiresAt: string;
+  checkoutUrl?: string;
+}

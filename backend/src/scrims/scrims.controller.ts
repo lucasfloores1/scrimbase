@@ -13,6 +13,7 @@ import { ScrimScreenshotParserService } from "./parsing/scrim-screenshot-parser.
 import { Serialize } from "src/common/decorators/serialize.decorator";
 import { ScrimResponseDto } from "./dto/scrim.response.dto";
 import { ParseScrimScreenshotResponseDto } from "./parsing/dto/parse-scrim.response.dto";
+import { ScrimQuotaGuard } from "src/billing/guards/scrim-quota.guard";
 
 
 @Controller("teams/:teamId/scrims")
@@ -36,7 +37,7 @@ export class ScrimsController {
     }
 
     @Post()
-    @UseGuards(TeamFullGuard)
+    @UseGuards(TeamFullGuard, ScrimQuotaGuard)
     @UseInterceptors(FileInterceptor("screenshot", scrimMulterOptions))
     @Serialize(ScrimResponseDto)
     async create(
@@ -58,7 +59,7 @@ export class ScrimsController {
     }
 
     @Post("parse-screenshot")
-    @UseGuards(TeamFullGuard)
+    @UseGuards(TeamFullGuard, ScrimQuotaGuard)
     @Serialize(ParseScrimScreenshotResponseDto)
     @UseInterceptors(FileInterceptor("screenshot", scrimParseMulterOptions))
     async parseScreenshot(

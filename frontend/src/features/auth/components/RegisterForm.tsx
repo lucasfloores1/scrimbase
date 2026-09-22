@@ -48,14 +48,14 @@ export function RegisterForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-1">
-        <h1 className="text-lg font-semibold text-slate-100">Crear cuenta</h1>
-        <p className="text-sm text-slate-400">
+        <h1 className="text-lg font-semibold text-foreground">Crear cuenta</h1>
+        <p className="text-sm text-muted-foreground">
           Configurá tu perfil para empezar en Scrimbase.
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-slate-200">
+        <Label htmlFor="email" className="text-foreground">
           Email
         </Label>
         <Input
@@ -64,40 +64,40 @@ export function RegisterForm() {
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="border-slate-800 bg-slate-950/40 text-slate-100 placeholder:text-slate-500"
+          className="placeholder:text-muted-foreground"
           placeholder="tu@email.com"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="username" className="text-slate-200">
+        <Label htmlFor="username" className="text-foreground">
           Nombre de usuario
         </Label>
         <Input
           id="username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="border-slate-800 bg-slate-950/40 text-slate-100 placeholder:text-slate-500"
+          className="placeholder:text-muted-foreground"
           placeholder="Tu nombre público"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="riotId" className="text-slate-200">
+        <Label htmlFor="riotId" className="text-foreground">
           Riot ID
         </Label>
         <Input
           id="riotId"
           value={riotId}
           onChange={(e) => setRiotId(e.target.value)}
-          className="border-slate-800 bg-slate-950/40 text-slate-100 placeholder:text-slate-500"
+          className="placeholder:text-muted-foreground"
           placeholder="MiNick#TAG"
         />
-        <p className="text-xs text-slate-500">Formato requerido: gameUsername#TAG</p>
+        <p className="text-xs text-muted-foreground">Formato requerido: gameUsername#TAG</p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="password" className="text-slate-200">
+        <Label htmlFor="password" className="text-foreground">
           Contraseña
         </Label>
         <Input
@@ -106,13 +106,13 @@ export function RegisterForm() {
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="border-slate-800 bg-slate-950/40 text-slate-100 placeholder:text-slate-500"
+          className="placeholder:text-muted-foreground"
           placeholder="Mínimo 6 caracteres"
         />
       </div>
 
       {error ? (
-        <div className="rounded-md border border-red-700/30 bg-red-600/10 px-3 py-2 text-sm text-red-200">
+        <div className="rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
           {errorToMessage(error)}
         </div>
       ) : null}
@@ -120,14 +120,14 @@ export function RegisterForm() {
       <Button
         type="submit"
         disabled={!canSubmit}
-        className="w-full bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-60"
+        className="w-full bg-brand text-brand-foreground hover:bg-brand-hover disabled:opacity-60"
       >
         {isPending ? "Creando cuenta..." : "Crear cuenta"}
       </Button>
 
-      <p className="text-sm text-slate-400">
+      <p className="text-sm text-muted-foreground">
         ¿Ya tenés cuenta?{" "}
-        <Link className="text-blue-300 hover:text-blue-200" to="/login">
+        <Link className="text-brand hover:underline" to="/login">
           Iniciar sesión
         </Link>
       </p>

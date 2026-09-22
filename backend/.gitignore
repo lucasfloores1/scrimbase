@@ -21,3 +21,7 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Uploads (mantener las carpetas, ignorar los archivos subidos)
+uploads/*/*
+!uploads/*/.gitkeep

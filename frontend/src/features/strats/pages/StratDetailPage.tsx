@@ -58,18 +58,17 @@ export default function StratDetailPage() {
       <header className="flex items-start justify-between gap-3">
 
         <div className="space-y-1">
-          <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-100">
+          <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-foreground">
             {s.name}
           </h1>
 
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-muted-foreground">
             Mapa: {s.map}
           </p>
         </div>
 
         <Button
           variant="outline"
-          className="border-slate-700 bg-slate-950 text-slate-200 hover:bg-slate-900"
           onClick={() => navigate("/app/strats")}
         >
           Volver
@@ -77,16 +76,16 @@ export default function StratDetailPage() {
 
       </header>
 
-      <Separator className="bg-slate-800" />
+      <Separator className="bg-accent" />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 
         {/* Notes */}
 
-        <Card className="border-slate-800 bg-slate-950/30">
+        <Card>
 
           <CardHeader>
-            <CardTitle className="text-sm font-medium text-slate-200">
+            <CardTitle className="text-sm font-medium text-foreground">
               Notas
             </CardTitle>
           </CardHeader>
@@ -94,11 +93,11 @@ export default function StratDetailPage() {
           <CardContent>
 
             {s.notes ? (
-              <p className="text-sm text-slate-300 whitespace-pre-line">
+              <p className="text-sm text-muted-foreground whitespace-pre-line">
                 {s.notes}
               </p>
             ) : (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-muted-foreground">
                 No hay notas para esta estrategia.
               </p>
             )}
@@ -110,17 +109,17 @@ export default function StratDetailPage() {
         {/* Screenshot */}
 
         {s.screenshotUrl ? (
-          <Card className="border-slate-800 bg-slate-950/30">
+          <Card>
 
             <CardHeader>
-              <CardTitle className="text-sm font-medium text-slate-200">
+              <CardTitle className="text-sm font-medium text-foreground">
                 Captura
               </CardTitle>
             </CardHeader>
 
             <CardContent>
 
-              <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-950/40">
+              <div className="overflow-hidden rounded-lg border">
                 <img
                   src={env.assetsUrl + s.screenshotUrl}
                   alt="Strat screenshot"

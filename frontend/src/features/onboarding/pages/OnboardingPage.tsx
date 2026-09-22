@@ -3,7 +3,7 @@ import JoinTeamCard from "../components/JoinTeamCard";
 
 export function OnboardingPage() {
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-100 flex pt-10 justify-center px-6">
+        <div className="min-h-screen bg-background text-foreground flex pt-10 justify-center px-6">
 
       <div className="w-full max-w-5xl">
 
@@ -12,7 +12,7 @@ export function OnboardingPage() {
             Bienvenido 👋
           </h1>
 
-          <p className="text-slate-400 mt-2">
+          <p className="text-muted-foreground mt-2">
             Unete a un equipo o crea uno nuevo
           </p>
         </div>

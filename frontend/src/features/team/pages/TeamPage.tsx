@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
 
 import { teamsApi } from "@/shared/api/teams.api";
 
@@ -14,32 +13,31 @@ function roleStyle(role: string, isAdmin: boolean) {
   if (isAdmin) {
     return {
       text: "Admin",
-      className: "bg-yellow-600/15 text-yellow-200 border-yellow-600/30",
+      className: "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400",
     };
   }
 
   if (role === "MANAGER") {
     return {
       text: "Manager",
-      className: "bg-purple-600/15 text-purple-200 border-purple-600/30",
+      className: "border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400",
     };
   }
 
   if (role === "COACH") {
     return {
       text: "Coach",
-      className: "bg-blue-600/15 text-blue-200 border-blue-600/30",
+      className: "bg-brand/10 text-brand border-brand/30",
     };
   }
 
   return {
     text: "Player",
-    className: "bg-slate-600/15 text-slate-200 border-slate-600/30",
+    className: "bg-muted text-muted-foreground border-border",
   };
 }
 
 export function TeamPage() {
-  const navigate = useNavigate();
 
   const query = useQuery({
     queryKey: ["teamMembers"],
@@ -76,20 +74,20 @@ export function TeamPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-1">
-        <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-slate-100">
+        <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-foreground">
           Team
         </h1>
 
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-muted-foreground">
           Miembros de tu equipo y sus roles.
         </p>
       </header>
 
-      <Separator className="bg-slate-800" />
+      <Separator />
 
-      <Card className="border-slate-800 bg-slate-950/30">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium text-slate-200">
+          <CardTitle className="text-sm font-medium text-foreground">
             Roster
           </CardTitle>
         </CardHeader>
@@ -98,20 +96,20 @@ export function TeamPage() {
           <div className="w-full overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-800">
-                  <th className="px-4 py-3 text-left font-medium text-slate-400">
+                <tr className="border-b border-border">
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                     Username
                   </th>
 
-                  <th className="px-4 py-3 text-left font-medium text-slate-400">
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                     Riot ID
                   </th>
 
-                  <th className="px-4 py-3 text-left font-medium text-slate-400">
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                     Alt Account
                   </th>
 
-                  <th className="px-4 py-3 text-left font-medium text-slate-400">
+                  <th className="px-4 py-3 text-left font-medium text-muted-foreground">
                     Role
                   </th>
                 </tr>
@@ -122,16 +120,16 @@ export function TeamPage() {
                   const role = roleStyle(m.role, m.isAdmin);
 
                   return (
-                    <tr key={m.id} className="border-b border-slate-900">
-                      <td className="px-4 py-3 text-slate-200 whitespace-nowrap">
+                    <tr key={m.id} className="border-b border-border">
+                      <td className="px-4 py-3 text-foreground whitespace-nowrap">
                         {m.user?.username}
                       </td>
 
-                      <td className="px-4 py-3 text-slate-200 whitespace-nowrap">
+                      <td className="px-4 py-3 text-foreground whitespace-nowrap">
                         {m.user?.riotId}
                       </td>
 
-                      <td className="px-4 py-3 text-slate-200 whitespace-nowrap">
+                      <td className="px-4 py-3 text-foreground whitespace-nowrap">
                         {m.user?.altAccountId ?? "—"}
                       </td>
 
